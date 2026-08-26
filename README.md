@@ -5,8 +5,8 @@ orchestrator routes driver requests to Navigation, EV Charging, HVAC, and Calend
 operating over a simulated vehicle (battery, motion, climate), exposed through a FastAPI
 backend and a React cabin-dashboard frontend.
 
-Built from `docs/` blueprint: Python, LangGraph, Azure OpenAI, FastAPI, Azure Speech
-Services, Azure Maps, Docker.
+Stack per the project blueprint: Python, LangGraph, Azure OpenAI, FastAPI, Azure Speech
+Services, Azure Maps, Docker. See `docs/architecture.md` and `docs/demo.md`.
 
 ## Features
 

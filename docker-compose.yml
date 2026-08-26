@@ -1,0 +1,21 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - MOCK_MODE=${MOCK_MODE:-true}
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY:-}
+      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT:-gpt-4o}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-2024-10-21}
+      - AZURE_SPEECH_KEY=${AZURE_SPEECH_KEY:-}
+      - AZURE_SPEECH_REGION=${AZURE_SPEECH_REGION:-eastus}
+      - AZURE_MAPS_KEY=${AZURE_MAPS_KEY:-}
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
