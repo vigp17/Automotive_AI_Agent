@@ -7,4 +7,5 @@ langchain-core
 langchain-openai
 langgraph
 langgraph-checkpoint-sqlite
+faster-whisper
 pytest

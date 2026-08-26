@@ -13,6 +13,7 @@ dependencies = [
     "langchain-openai",
     "langgraph",
     "langgraph-checkpoint-sqlite",
+    "faster-whisper",
 ]
 
 [tool.pytest.ini_options]

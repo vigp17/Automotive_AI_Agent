@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import io
 import struct
+import threading
 import wave
 
 import httpx
@@ -25,6 +27,42 @@ class MockSpeechClient:
             wav.setframerate(16000)
             wav.writeframes(struct.pack("<h", 0) * 8000)  # 0.5 s silence
         return buffer.getvalue()
+
+
+class LocalWhisperClient:
+    """Real speech-to-text with no cloud keys: faster-whisper running locally.
+
+    Used when Azure Speech is not configured. Decodes WebM/Opus, WAV, etc. via
+    PyAV, so browser MediaRecorder uploads work directly. TTS returns empty
+    audio; the frontend speaks replies with the browser's speechSynthesis.
+    """
+
+    def __init__(self, model_name: str) -> None:
+        self.model_name = model_name
+        self._model = None
+        self._lock = threading.Lock()
+
+    def _get_model(self):
+        with self._lock:
+            if self._model is None:
+                from faster_whisper import WhisperModel
+
+                # Downloads (~145 MB for base.en) to the HuggingFace cache on
+                # first use, then loads from disk.
+                self._model = WhisperModel(self.model_name, compute_type="int8")
+            return self._model
+
+    def _transcribe_sync(self, audio: bytes) -> str:
+        segments, _info = self._get_model().transcribe(io.BytesIO(audio), language="en")
+        return " ".join(segment.text.strip() for segment in segments).strip()
+
+    async def transcribe(self, audio: bytes, content_type: str = "audio/wav") -> str:
+        return await asyncio.get_event_loop().run_in_executor(
+            None, self._transcribe_sync, audio
+        )
+
+    async def synthesize(self, text: str) -> bytes:
+        return b""
 
 
 class AzureSpeechClient:
@@ -73,15 +111,17 @@ class AzureSpeechClient:
             return resp.content
 
 
-_client: MockSpeechClient | AzureSpeechClient | None = None
+_client: MockSpeechClient | AzureSpeechClient | LocalWhisperClient | None = None
 
 
 def get_speech_client():
     global _client
     if _client is None:
         settings = get_settings()
-        if settings.mock_mode or not settings.azure_speech_key:
-            _client = MockSpeechClient()
-        else:
+        if not settings.mock_mode and settings.azure_speech_key:
             _client = AzureSpeechClient(settings.azure_speech_key, settings.azure_speech_region)
+        elif settings.local_stt:
+            _client = LocalWhisperClient(settings.whisper_model)
+        else:
+            _client = MockSpeechClient()
     return _client

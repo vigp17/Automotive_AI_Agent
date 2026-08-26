@@ -58,11 +58,17 @@ docker compose up --build
 Copy `.env.example` to `.env`, set `MOCK_MODE=false` and fill in Azure OpenAI, Speech and
 Maps credentials.
 
-Voice input: the dashboard mic uses the browser's built-in Web Speech API when available
-(Chrome, Edge, Safari - real transcription and spoken replies with no keys). Browsers
-without it fall back to uploading audio to `/voice` (Azure Speech with keys, mock
-otherwise). Note for the fallback with real Azure STT: the browser records WebM/Opus
-while Azure short-form STT expects WAV/PCM.
+Voice input works with no keys, in any browser:
+
+1. Browsers with the Web Speech API (Chrome, Edge, Safari) transcribe locally and speak
+   replies via speech synthesis.
+2. Everywhere else the audio is uploaded to `/voice`, where a **local Whisper model**
+   (`faster-whisper`, `base.en`, downloaded ~145 MB on first use) transcribes it -
+   WebM/Opus from the browser decodes directly. The reply is spoken by the browser.
+3. With `MOCK_MODE=false` and Azure Speech credentials, `/voice` uses Azure STT/TTS
+   instead (note: Azure short-form STT expects WAV/PCM, not the browser's WebM).
+
+Set `LOCAL_STT=false` to disable the Whisper path (tests do this to stay deterministic).
 
 ## Architecture
 

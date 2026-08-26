@@ -2,8 +2,11 @@ import os
 import sys
 from pathlib import Path
 
-# Force mock mode for the whole test run, regardless of any local .env
+# Force mock mode for the whole test run, regardless of any local .env.
+# LOCAL_STT=false keeps the deterministic mock transcriber (no Whisper model
+# download in tests).
 os.environ["MOCK_MODE"] = "true"
+os.environ["LOCAL_STT"] = "false"
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BACKEND_DIR))

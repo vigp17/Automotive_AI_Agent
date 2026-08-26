@@ -27,9 +27,13 @@ export default function ChatPanel({ sessionId }: { sessionId: string }) {
   const [recording, setRecording] = useState(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const recognizerRef = useRef<RecognizerLike | null>(null);
+  // Tracks which capture pipeline is live so start/stop clicks and async
+  // recognition callbacks can't race each other into duplicate recorders.
+  const modeRef = useRef<"idle" | "recognition" | "recorder">("idle");
   // Set when browser recognition errors out, so we stop retrying it and use
   // the server /voice pipeline instead.
   const recognitionBrokenRef = useRef(false);
+  const fallbackAnnouncedRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -80,21 +84,37 @@ export default function ChatPanel({ sessionId }: { sessionId: string }) {
         // e.g. "network": recognition service unavailable in this browser.
         // Fall back to the server /voice pipeline from now on.
         recognitionBrokenRef.current = true;
+        if (!fallbackAnnouncedRef.current) {
+          fallbackAnnouncedRef.current = true;
+          setMessages((m) => [
+            ...m,
+            {
+              role: "assistant",
+              text: "(Browser speech recognition isn't available here - switching to the onboard voice pipeline. Click the mic, speak, then click again to stop.)",
+            },
+          ]);
+        }
         void recordAndSend();
       }
     };
     recognizer.onend = () => {
       recognizerRef.current = null;
-      setRecording(false);
+      // Only clear the UI if we didn't hand off to the recorder fallback.
+      if (modeRef.current === "recognition") {
+        modeRef.current = "idle";
+        setRecording(false);
+      }
     };
 
     recognizerRef.current = recognizer;
+    modeRef.current = "recognition";
     recognizer.start();
     setRecording(true);
     return true;
   };
 
   const recordAndSend = async () => {
+    if (modeRef.current === "recorder") return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
@@ -102,6 +122,8 @@ export default function ChatPanel({ sessionId }: { sessionId: string }) {
       recorder.ondataavailable = (e) => chunks.push(e.data);
       recorder.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
+        recorderRef.current = null;
+        modeRef.current = "idle";
         setRecording(false);
         setBusy(true);
         try {
@@ -115,6 +137,10 @@ export default function ChatPanel({ sessionId }: { sessionId: string }) {
           if (resp.audio_base64) {
             const audio = new Audio(`data:audio/wav;base64,${resp.audio_base64}`);
             void audio.play().catch(() => undefined);
+          } else {
+            // Server did TTS-less transcription (local Whisper): speak the
+            // reply with the browser's own voice.
+            speak(resp.reply);
           }
         } catch {
           setMessages((m) => [...m, { role: "assistant", text: "Voice request failed." }]);
@@ -123,9 +149,12 @@ export default function ChatPanel({ sessionId }: { sessionId: string }) {
         }
       };
       recorderRef.current = recorder;
+      modeRef.current = "recorder";
       recorder.start();
       setRecording(true);
     } catch (err) {
+      modeRef.current = "idle";
+      setRecording(false);
       const detail = err instanceof Error ? ` (${err.name})` : "";
       setMessages((m) => [
         ...m,
@@ -135,13 +164,16 @@ export default function ChatPanel({ sessionId }: { sessionId: string }) {
   };
 
   const toggleMic = async () => {
-    if (recording) {
+    if (modeRef.current === "recognition") {
       recognizerRef.current?.stop();
+      return;
+    }
+    if (modeRef.current === "recorder") {
       recorderRef.current?.stop();
       return;
     }
     // Prefer browser-native speech recognition (real STT, no server keys);
-    // fall back to recording + server /voice (Azure Speech or mock).
+    // fall back to recording + server /voice (local Whisper, Azure, or mock).
     if (!startRecognition()) {
       await recordAndSend();
     }

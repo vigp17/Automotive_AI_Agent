@@ -26,6 +26,11 @@ class Settings(BaseSettings):
 
     azure_maps_key: str = ""
 
+    # Local Whisper STT used when Azure Speech is not configured. Disable to
+    # fall back to the deterministic mock transcriber (used in tests).
+    local_stt: bool = True
+    whisper_model: str = "base.en"
+
     memory_db_path: str = str(DATA_DIR / "memory.sqlite")
 
 
