@@ -22,9 +22,11 @@ Open http://localhost:5173 and walk through:
    route -> energy check -> arrival verdict, and starts navigation. To force a charging
    stop first ask a few questions with battery drained low (or edit `soc` in
    `backend/simulator/vehicle.py`).
-7. **Voice** - click the mic button, speak, click stop. In mock mode the transcript is
-   always "What's my battery level?" and the spoken reply is a silent WAV; with Azure
-   keys it's real STT/TTS.
+7. **Voice** - click the mic button, speak, click stop. In Chrome/Edge/Safari the
+   browser's built-in speech recognition transcribes your words (no keys needed) and the
+   reply is spoken aloud. In browsers without speech recognition the audio is sent to
+   the backend `/voice` pipeline instead: real Azure STT/TTS with keys, or the fixed
+   mock transcript "What's my battery level?" in mock mode.
 8. **Report** - `curl localhost:8000/report` returns the markdown trip report.
 9. **Memory** - follow-ups share a session: the SQLite checkpointer keeps per-session
    conversation history across requests.

@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { sendChat, sendVoice } from "../api";
+import { getRecognizerCtor, RecognizerLike, speak } from "../speech";
 
 interface Message {
   role: "user" | "assistant";
@@ -25,13 +26,17 @@ export default function ChatPanel({ sessionId }: { sessionId: string }) {
   const [busy, setBusy] = useState(false);
   const [recording, setRecording] = useState(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
+  const recognizerRef = useRef<RecognizerLike | null>(null);
+  // Set when browser recognition errors out, so we stop retrying it and use
+  // the server /voice pipeline instead.
+  const recognitionBrokenRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const ask = async (text: string) => {
+  const ask = async (text: string, speakReply = false) => {
     if (!text.trim() || busy) return;
     setMessages((m) => [...m, { role: "user", text }]);
     setInput("");
@@ -39,6 +44,7 @@ export default function ChatPanel({ sessionId }: { sessionId: string }) {
     try {
       const resp = await sendChat(text, sessionId);
       setMessages((m) => [...m, { role: "assistant", text: resp.reply, intent: resp.intent }]);
+      if (speakReply) speak(resp.reply);
     } catch {
       setMessages((m) => [...m, { role: "assistant", text: "Sorry, something went wrong." }]);
     } finally {
@@ -51,11 +57,44 @@ export default function ChatPanel({ sessionId }: { sessionId: string }) {
     void ask(input);
   };
 
-  const toggleMic = async () => {
-    if (recording) {
-      recorderRef.current?.stop();
-      return;
-    }
+  const startRecognition = (): boolean => {
+    const Ctor = getRecognizerCtor();
+    if (!Ctor || recognitionBrokenRef.current) return false;
+
+    const recognizer = new Ctor();
+    recognizer.lang = "en-US";
+    recognizer.interimResults = false;
+    recognizer.maxAlternatives = 1;
+
+    recognizer.onresult = (event) => {
+      const transcript = event.results[0]?.[0]?.transcript ?? "";
+      if (transcript.trim()) void ask(transcript, true);
+    };
+    recognizer.onerror = (event) => {
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        setMessages((m) => [
+          ...m,
+          { role: "assistant", text: "Microphone access was denied - allow it in your browser and try again." },
+        ]);
+      } else if (event.error !== "no-speech" && event.error !== "aborted") {
+        // e.g. "network": recognition service unavailable in this browser.
+        // Fall back to the server /voice pipeline from now on.
+        recognitionBrokenRef.current = true;
+        void recordAndSend();
+      }
+    };
+    recognizer.onend = () => {
+      recognizerRef.current = null;
+      setRecording(false);
+    };
+
+    recognizerRef.current = recognizer;
+    recognizer.start();
+    setRecording(true);
+    return true;
+  };
+
+  const recordAndSend = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
@@ -86,11 +125,25 @@ export default function ChatPanel({ sessionId }: { sessionId: string }) {
       recorderRef.current = recorder;
       recorder.start();
       setRecording(true);
-    } catch {
+    } catch (err) {
+      const detail = err instanceof Error ? ` (${err.name})` : "";
       setMessages((m) => [
         ...m,
-        { role: "assistant", text: "Microphone unavailable - check browser permissions." },
+        { role: "assistant", text: `Microphone unavailable${detail} - check browser permissions.` },
       ]);
+    }
+  };
+
+  const toggleMic = async () => {
+    if (recording) {
+      recognizerRef.current?.stop();
+      recorderRef.current?.stop();
+      return;
+    }
+    // Prefer browser-native speech recognition (real STT, no server keys);
+    // fall back to recording + server /voice (Azure Speech or mock).
+    if (!startRecognition()) {
+      await recordAndSend();
     }
   };
 

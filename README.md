@@ -56,9 +56,13 @@ docker compose up --build
 ### Real Azure services
 
 Copy `.env.example` to `.env`, set `MOCK_MODE=false` and fill in Azure OpenAI, Speech and
-Maps credentials. Note: the browser records microphone audio as WebM/Opus; Azure
-short-form STT expects WAV/PCM, so for real STT send WAV audio to `/voice` (the mock
-accepts anything).
+Maps credentials.
+
+Voice input: the dashboard mic uses the browser's built-in Web Speech API when available
+(Chrome, Edge, Safari - real transcription and spoken replies with no keys). Browsers
+without it fall back to uploading audio to `/voice` (Azure Speech with keys, mock
+otherwise). Note for the fallback with real Azure STT: the browser records WebM/Opus
+while Azure short-form STT expects WAV/PCM.
 
 ## Architecture
 
