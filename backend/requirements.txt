@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+pydantic-settings
+httpx
+python-multipart
+langchain-core
+langchain-openai
+langgraph
+langgraph-checkpoint-sqlite
+pytest

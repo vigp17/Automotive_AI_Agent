@@ -1,0 +1,20 @@
+[project]
+name = "cabin-copilot-backend"
+version = "0.1.0"
+description = "AI-powered intelligent cabin copilot for software-defined vehicles"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic-settings",
+    "httpx",
+    "python-multipart",
+    "langchain-core",
+    "langchain-openai",
+    "langgraph",
+    "langgraph-checkpoint-sqlite",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

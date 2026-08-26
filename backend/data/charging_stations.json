@@ -1,0 +1,10 @@
+[
+  {"name": "Electrify America - South Lake Union", "lat": 47.6235, "lon": -122.3378, "power_kw": 150, "price_per_kwh": 0.43},
+  {"name": "EVgo - Capitol Hill", "lat": 47.6205, "lon": -122.3212, "power_kw": 100, "price_per_kwh": 0.39},
+  {"name": "Supercharger - Bellevue Square", "lat": 47.6158, "lon": -122.2033, "power_kw": 250, "price_per_kwh": 0.36},
+  {"name": "ChargePoint - Renton Landing", "lat": 47.5031, "lon": -122.2001, "power_kw": 62, "price_per_kwh": 0.31},
+  {"name": "Electrify America - Northgate", "lat": 47.7062, "lon": -122.3245, "power_kw": 350, "price_per_kwh": 0.43},
+  {"name": "EVgo - SeaTac Airport", "lat": 47.4443, "lon": -122.3021, "power_kw": 100, "price_per_kwh": 0.41},
+  {"name": "Supercharger - Redmond Town Center", "lat": 47.6698, "lon": -122.1245, "power_kw": 250, "price_per_kwh": 0.36},
+  {"name": "ChargePoint - Tacoma Mall", "lat": 47.2199, "lon": -122.4633, "power_kw": 62, "price_per_kwh": 0.29}
+]

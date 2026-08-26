@@ -1,0 +1,5 @@
+[
+  {"title": "Design Review", "location": "Bellevue Office", "lat": 47.6101, "lon": -122.2015, "offset_hours": 2, "duration_min": 60},
+  {"title": "1:1 with Alex", "location": "HQ - South Lake Union", "lat": 47.6235, "lon": -122.336, "offset_hours": 5, "duration_min": 30},
+  {"title": "Supplier Sync", "location": "Redmond Campus", "lat": 47.674, "lon": -122.1215, "offset_hours": 26, "duration_min": 45}
+]
