@@ -38,6 +38,7 @@ A **voice-enabled, multi-agent in-cabin assistant** for software-defined vehicle
 - **Vehicle simulator** — live drive loop: battery drain, motion along routes, climate control
 - **HVAC agent** — cabin comfort via `set_temperature` and natural-language commands
 - **Driver wellness** — rule-based nudges (long drives, low battery, late-night fatigue)
+- **Proactive alerts** — live banners for leave-soon, low battery, cabin gap, long drives, and late-night fatigue (no need to ask)
 - **Trip reports** — markdown report endpoint (`/report`)
 - **Conversation memory** — per-session SQLite checkpointer (LangGraph)
 

@@ -1,3 +1,11 @@
+export interface CabinAlert {
+  id: string;
+  severity: "info" | "warning" | "danger";
+  title: string;
+  message: string;
+  action: string | null;
+}
+
 export interface VehicleState {
   soc_percent: number;
   range_km: number;
@@ -16,6 +24,7 @@ export interface VehicleState {
     progress: number | null;
     active: boolean;
   } | null;
+  alerts: CabinAlert[];
 }
 
 export interface ChatResponse {
@@ -58,6 +67,9 @@ export async function setTemperature(celsius: number): Promise<void> {
 export function openStateSocket(onState: (state: VehicleState) => void): WebSocket {
   const proto = window.location.protocol === "https:" ? "wss" : "ws";
   const ws = new WebSocket(`${proto}://${window.location.host}/vehicle/ws`);
-  ws.onmessage = (event) => onState(JSON.parse(event.data));
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    onState({ ...data, alerts: data.alerts ?? [] });
+  };
   return ws;
 }

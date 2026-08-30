@@ -10,7 +10,10 @@ cd frontend && npm run dev                                              # termin
 Open http://localhost:5173 and walk through:
 
 1. **Vehicle signals (Phase 1)** - widgets show live SOC, speed, cabin temp, location,
-   streamed over the websocket from the simulator.
+   streamed over the websocket from the simulator. A **leave-soon** banner appears for
+   the next calendar meeting (drive time + buffer). Click the action chip to start trip
+   planning, or Dismiss. Raise the climate target by 5°C or drop SOC below 15% to see
+   more alerts.
 2. **Climate (HVAC agent)** - type "Set temperature to 22" or "I'm cold". Watch the
    Climate widget target change and the cabin temp drift toward it.
 3. **Battery (EV agent)** - "Do I have enough battery for the airport?" gives an SOC

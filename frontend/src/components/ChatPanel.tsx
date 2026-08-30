@@ -15,7 +15,15 @@ const SUGGESTIONS = [
   "What's on my calendar?",
 ];
 
-export default function ChatPanel({ sessionId }: { sessionId: string }) {
+export default function ChatPanel({
+  sessionId,
+  queuedPrompt,
+  onQueuedPromptHandled,
+}: {
+  sessionId: string;
+  queuedPrompt?: string | null;
+  onQueuedPromptHandled?: () => void;
+}) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -55,6 +63,12 @@ export default function ChatPanel({ sessionId }: { sessionId: string }) {
       setBusy(false);
     }
   };
+
+  useEffect(() => {
+    if (!queuedPrompt || busy) return;
+    void ask(queuedPrompt);
+    onQueuedPromptHandled?.();
+  }, [queuedPrompt, busy]);
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();

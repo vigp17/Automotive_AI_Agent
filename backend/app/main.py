@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 
 from agents.orchestrator import Orchestrator
 from reports.trip_report import build_trip_report
+from services.alerts import cockpit_payload, evaluate_alerts
 from simulator.vehicle import get_simulator
 from speech.azure_speech import get_speech_client
 
@@ -62,7 +63,12 @@ def healthz():
 
 @app.get("/vehicle/state")
 def vehicle_state():
-    return get_simulator().state()
+    return cockpit_payload()
+
+
+@app.get("/alerts")
+def alerts():
+    return {"alerts": evaluate_alerts()}
 
 
 @app.post("/vehicle/temperature")
@@ -76,7 +82,7 @@ async def vehicle_ws(websocket: WebSocket):
     await websocket.accept()
     try:
         while True:
-            await websocket.send_json(get_simulator().state())
+            await websocket.send_json(cockpit_payload())
             await asyncio.sleep(1.0)
     except WebSocketDisconnect:
         pass

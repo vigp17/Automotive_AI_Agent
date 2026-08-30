@@ -11,7 +11,8 @@ Run the app first (`README.md` quickstart), then open http://localhost:5173.
 > vehicles. It routes driver requests to specialized agents for navigation, EV charging,
 > climate, and calendar — all over live vehicle signals."
 
-*Show the dashboard: battery, speed, climate, trip widgets + chat panel.*
+*Show the dashboard: battery, speed, climate, trip widgets + chat panel, and the
+leave-soon banner for the next meeting.*
 
 ---
 
