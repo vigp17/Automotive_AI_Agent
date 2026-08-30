@@ -1,31 +1,51 @@
 # AI Cabin Copilot
 
-A voice-enabled, multi-agent in-cabin assistant for software-defined vehicles. A LangGraph
-orchestrator routes driver requests to Navigation, EV Charging, HVAC, and Calendar agents
-operating over a simulated vehicle (battery, motion, climate), exposed through a FastAPI
-backend and a React cabin-dashboard frontend.
+[![CI](https://github.com/vigp17/Automotive_AI_Agent/actions/workflows/ci.yml/badge.svg)](https://github.com/vigp17/Automotive_AI_Agent/actions/workflows/ci.yml)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
+[![LangGraph](https://img.shields.io/badge/orchestration-LangGraph-purple.svg)](https://langchain-ai.github.io/langgraph/)
+[![FastAPI](https://img.shields.io/badge/API-FastAPI-009688.svg)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/frontend-React-61DAFB.svg)](https://react.dev/)
 
-Stack per the project blueprint: Python, LangGraph, Azure OpenAI, FastAPI, Azure Speech
-Services, Azure Maps, Docker. See `docs/architecture.md` and `docs/demo.md`.
+A **voice-enabled, multi-agent in-cabin assistant** for software-defined vehicles. A LangGraph orchestrator routes driver requests to Navigation, EV Charging, HVAC, and Calendar agents operating over live vehicle signals — with a React cabin dashboard and a clean path to production HMI integration.
+
+> **Demo:** run locally in under 2 minutes (no Azure keys required). See [Quickstart](#quickstart) and the [2-min demo script](docs/portfolio-demo-script.md).
+
+![Cabin dashboard — live vehicle widgets and multi-agent chat](docs/screenshots/dashboard.png)
+
+---
+
+## Highlights (for recruiters & interviews)
+
+| What I built | Detail |
+|---|---|
+| **Multi-agent orchestration** | LangGraph supervisor classifies intent and routes to 4 domain agents + a cross-agent trip planner |
+| **Cross-agent workflow** | "Get me to my next meeting" → calendar → route/ETA → EV charging check → navigation start |
+| **Vehicle signal layer** | Stateful simulator (SOC, speed, GPS, HVAC) behind a `VehicleBus` interface for future CAN/Ethernet |
+| **Voice pipeline** | Browser Web Speech API + local Whisper STT fallback — works without cloud keys |
+| **Production-ready seams** | Azure OpenAI, Speech, and Maps clients behind mock/real switches; Docker Compose deployment |
+| **Test coverage** | 20 pytest tests covering simulator physics, API endpoints, orchestration, and trip planning |
+
+**Tech stack:** Python · FastAPI · LangGraph · LangChain · Azure OpenAI · Azure Speech · Azure Maps · React · TypeScript · Vite · Docker · SQLite
+
+---
 
 ## Features
 
-- **Voice assistant** - speech in/out via Azure Speech Services (`/voice`)
-- **Navigation agent** - routing, ETA and traffic via Azure Maps
-- **EV charging planner** - SOC analysis, charging-stop recommendations from a station dataset
-- **Calendar integration** - JSON-backed local calendar, schedule-aware trips
-- **Vehicle signal simulator** - `get_soc`, `get_speed`, `get_location`, `set_temperature`,
-  live drive loop that drains the battery and moves the vehicle along routes
-- **HVAC agent** - cabin comfort control
-- **Driver wellness** - rule-based nudges (long drives, low battery, late-night fatigue)
-- **Report generation** - markdown trip report (`/report`)
-- **Cross-agent workflow** - "Get me to my next meeting" chains calendar, navigation and
-  EV charging (adds a charging stop when SOC won't cover the trip) and checks arrival time
+- **Voice assistant** — speech in/out via Web Speech API, local Whisper, or Azure Speech (`/voice`)
+- **Navigation agent** — routing, ETA, and traffic via Azure Maps (mock geocoder offline)
+- **EV charging planner** — SOC analysis and charging-stop recommendations from a station dataset
+- **Calendar integration** — JSON-backed schedule with meeting-aware trip planning
+- **Vehicle simulator** — live drive loop: battery drain, motion along routes, climate control
+- **HVAC agent** — cabin comfort via `set_temperature` and natural-language commands
+- **Driver wellness** — rule-based nudges (long drives, low battery, late-night fatigue)
+- **Trip reports** — markdown report endpoint (`/report`)
+- **Conversation memory** — per-session SQLite checkpointer (LangGraph)
 
-## Quickstart (no Azure keys needed)
+---
 
-Everything runs in **mock mode** by default: deterministic local stand-ins for Azure
-OpenAI, Speech and Maps, so the full system works offline.
+## Quickstart
+
+Everything runs in **mock mode** by default — no Azure keys needed.
 
 ```bash
 # Backend
@@ -34,81 +54,102 @@ python3 -m venv .venv
 cd backend && ../.venv/bin/python -m uvicorn app.main:app --port 8000
 
 # Frontend (second terminal)
-cd frontend
-npm install
-npm run dev   # http://localhost:5173
+cd frontend && npm install && npm run dev
+# → http://localhost:5173
 ```
 
-Try in the dashboard chat (or `POST /chat`):
+**Try these in the chat:**
 
-- "Get me to my next meeting"
-- "Do I have enough battery to reach the airport?"
-- "Set temperature to 22"
-- "What's on my calendar?"
+| Prompt | Agent / workflow |
+|---|---|
+| "Get me to my next meeting" | Trip planner (calendar + nav + EV) |
+| "Do I have enough battery for the airport?" | EV agent |
+| "Set temperature to 22" | HVAC agent |
+| "What's on my calendar?" | Calendar agent |
 
 ### Docker
 
 ```bash
 docker compose up --build
-# frontend on http://localhost:3000, backend on http://localhost:8000
+# frontend → http://localhost:3000  |  backend → http://localhost:8000
 ```
 
-### Real Azure services
+### Tests
 
-Copy `.env.example` to `.env`, set `MOCK_MODE=false` and fill in Azure OpenAI, Speech and
-Maps credentials.
+```bash
+cd backend && ../.venv/bin/python -m pytest
+```
 
-Voice input works with no keys, in any browser:
-
-1. Browsers with the Web Speech API (Chrome, Edge, Safari) transcribe locally and speak
-   replies via speech synthesis.
-2. Everywhere else the audio is uploaded to `/voice`, where a **local Whisper model**
-   (`faster-whisper`, `base.en`, downloaded ~145 MB on first use) transcribes it -
-   WebM/Opus from the browser decodes directly. The reply is spoken by the browser.
-3. With `MOCK_MODE=false` and Azure Speech credentials, `/voice` uses Azure STT/TTS
-   instead (note: Azure short-form STT expects WAV/PCM, not the browser's WebM).
-
-Set `LOCAL_STT=false` to disable the Whisper path (tests do this to stay deterministic).
+---
 
 ## Architecture
 
 ```
 Driver (voice/text)
-   -> Azure Speech STT
-   -> FastAPI (/chat, /voice)
-   -> LangGraph orchestrator (intent classify -> route)
-        -> Navigation agent -> Azure Maps + simulator
-        -> EV agent         -> charging dataset + simulator
-        -> HVAC agent       -> simulator (VehicleBus)
-        -> Calendar agent   -> JSON calendar store
-        -> Trip planner     -> calendar + maps + charging (cross-agent workflow)
-        -> Wellness rules
-   -> SQLite conversation memory (per session_id)
-   -> Azure Speech TTS -> Driver
+  → STT (browser / Whisper / Azure)
+  → FastAPI (/chat, /voice)
+  → LangGraph orchestrator
+       → Navigation · EV · HVAC · Calendar agents
+       → Trip planner (cross-agent workflow)
+       → Wellness rules
+  → VehicleBus → simulator (future: CAN / VSS / SOME-IP)
+  → SQLite conversation memory
+  → TTS → Driver
+  ↔ React cabin dashboard (WebSocket live state)
 ```
 
-The simulator sits behind a `VehicleBus` interface (`backend/simulator/bus.py`) so a real
-CAN adapter can replace it later without touching agents or tools (blueprint Phase 5).
+The simulator sits behind a **`VehicleBus` abstraction** (`backend/simulator/bus.py`) so a real CAN or automotive-Ethernet adapter can replace it on production hardware without touching agents or tools.
+
+Full details: [`docs/architecture.md`](docs/architecture.md) · Interview prep: [`docs/interview-talking-points.md`](docs/interview-talking-points.md)
+
+---
+
+## Voice (no keys required)
+
+1. **Chrome / Edge / Safari** — browser Web Speech API transcribes locally; replies spoken via speech synthesis
+2. **Other browsers** — audio uploaded to `/voice`; local **Whisper** (`faster-whisper`, ~145 MB download on first use) transcribes WebM/Opus from the mic
+3. **Production** — set `MOCK_MODE=false` + Azure Speech credentials for cloud STT/TTS
+
+---
+
+## Azure integration (optional)
+
+Copy `.env.example` → `.env`, set `MOCK_MODE=false`, and fill in Azure OpenAI, Speech, and Maps keys.
+
+---
 
 ## Project layout
 
 ```
 backend/
-  app/          FastAPI app + settings
-  agents/       LLM factory (Azure/mock), orchestrator, domain agents
-  tools/        LangChain tools over simulator and services
-  services/     Azure Maps client, calendar store, charging lookup
-  simulator/    vehicle physics + VehicleBus abstraction
-  speech/       Azure Speech STT/TTS + mocks
-  reports/      trip report generator
-  data/         charging stations, calendar seed
-  tests/        pytest suite (runs fully in mock mode)
+  app/          FastAPI + settings
+  agents/       LangGraph orchestrator + domain agents + LLM factory
+  tools/        LangChain tools (vehicle, nav, EV, calendar)
+  services/     Maps client, calendar store, charging lookup
+  simulator/    Vehicle physics + VehicleBus seam
+  speech/       Azure Speech + local Whisper + mocks
+  reports/      Trip report generator
+  tests/        pytest (20 tests, fully offline)
 frontend/       React + Vite cabin dashboard
-docs/           architecture notes + demo script
+docs/           Architecture, demo script, screenshots
 ```
 
-## Tests
+---
 
-```bash
-cd backend && ../.venv/bin/python -m pytest
-```
+## Roadmap
+
+- [x] Phases 1–4: simulator, agents, voice, dashboard, trip planning
+- [x] Local Whisper STT (keyless voice)
+- [x] GitHub CI (pytest + frontend build)
+- [ ] Phase 5: `VehicleBus` adapter for CAN / VSS / Android Automotive
+- [ ] Outlook / Teams calendar (Microsoft Graph)
+- [ ] Azure keys wired for live demo
+- [ ] Demo video (see [`docs/portfolio-demo-script.md`](docs/portfolio-demo-script.md))
+
+---
+
+## Author
+
+**Vignesh Pai** — [GitHub @vigp17](https://github.com/vigp17)
+
+Built from the *AI Cabin Copilot Project Blueprint* for software-defined vehicles.
