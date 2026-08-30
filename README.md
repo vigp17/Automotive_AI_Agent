@@ -97,13 +97,13 @@ Driver (voice/text)
        → Navigation · EV · HVAC · Calendar agents
        → Trip planner (cross-agent workflow)
        → Wellness rules
-  → VehicleBus → simulator (future: CAN / VSS / SOME-IP)
+  → VehicleBus → simulator or virtual CAN (`VEHICLE_BUS=sim|can`)
   → SQLite conversation memory
   → TTS → Driver
   ↔ React cabin dashboard (WebSocket live state)
 ```
 
-The simulator sits behind a **`VehicleBus` abstraction** (`backend/simulator/bus.py`) so a real CAN or automotive-Ethernet adapter can replace it on production hardware without touching agents or tools.
+The simulator sits behind a **`VehicleBus` abstraction** (`backend/simulator/bus.py`). Set `VEHICLE_BUS=can` to send SOC, speed, GPS, and HVAC over a python-can **virtual bus** (same tools, CAN frames). A real adapter is the same interface plus a different `python-can` channel. Debug last frames at `GET /vehicle/can`.
 
 Full details: [`docs/architecture.md`](docs/architecture.md)
 
@@ -146,7 +146,8 @@ docs/           Architecture, demo script, screenshots
 - [x] Phases 1–4: simulator, agents, voice, dashboard, trip planning
 - [x] Local Whisper STT (keyless voice)
 - [x] GitHub CI (pytest + frontend build)
-- [ ] Phase 5: `VehicleBus` adapter for CAN / VSS / Android Automotive
+- [x] Phase 5 (virtual): `VehicleBus` + python-can virtual bus (`VEHICLE_BUS=can`)
+- [ ] Phase 5 (hardware): SocketCAN / USB-CAN adapter
 - [ ] Outlook / Teams calendar (Microsoft Graph)
 - [ ] Azure keys wired for live demo
 - [ ] Demo video (see [`docs/portfolio-demo-script.md`](docs/portfolio-demo-script.md))
