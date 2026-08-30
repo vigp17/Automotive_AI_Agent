@@ -100,7 +100,7 @@ Driver (voice/text)
 
 The simulator sits behind a **`VehicleBus` abstraction** (`backend/simulator/bus.py`) so a real CAN or automotive-Ethernet adapter can replace it on production hardware without touching agents or tools.
 
-Full details: [`docs/architecture.md`](docs/architecture.md) · Interview prep: [`docs/interview-talking-points.md`](docs/interview-talking-points.md)
+Full details: [`docs/architecture.md`](docs/architecture.md)
 
 ---
 
