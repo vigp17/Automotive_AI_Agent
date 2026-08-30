@@ -22,7 +22,7 @@ Driver -> Speech-to-Text -> AI Orchestrator -> {Navigation, EV, HVAC, Calendar} 
 | Tools | `backend/tools/` | LangChain tools over the simulator, maps client, charging dataset, calendar store |
 | LLM factory | `backend/agents/llm.py` | AzureChatOpenAI in real mode; deterministic keyword-driven `MockChatModel` in `MOCK_MODE` (same tool-calling contract) |
 | Vehicle simulator | `backend/simulator/vehicle.py` | SOC drain, motion along route waypoints, cabin-temp drift; 1 Hz tick loop |
-| VehicleBus | `backend/simulator/bus.py` | Signal-level read/write seam for a future CAN adapter (blueprint Phase 5) |
+| VehicleBus | `backend/simulator/bus.py` | `sim` (direct) or `can` (python-can virtual bus + `can_codec` / `can_bridge`) |
 | Speech | `backend/speech/azure_speech.py` | Azure Speech REST STT/TTS + mocks |
 | Maps | `backend/services/maps.py` | Azure Maps geocode + route + traffic, deterministic mock geocoder for demo places |
 | Reports | `backend/reports/trip_report.py` | Markdown trip/wellness report |

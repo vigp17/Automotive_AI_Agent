@@ -1,0 +1,12 @@
+{
+  "channel": "cabin",
+  "interface": "virtual",
+  "signals": {
+    "battery.soc": { "id": 256, "kind": "float", "scale": 0.1, "writable": false },
+    "battery.range_km": { "id": 257, "kind": "float", "scale": 0.1, "writable": false },
+    "vehicle.speed_kph": { "id": 258, "kind": "float", "scale": 0.1, "writable": false },
+    "vehicle.location": { "id": 259, "kind": "latlon", "writable": false },
+    "hvac.cabin_temp_c": { "id": 928, "kind": "float", "scale": 0.1, "writable": false },
+    "hvac.target_temp_c": { "id": 929, "kind": "float", "scale": 0.1, "writable": true }
+  }
+}

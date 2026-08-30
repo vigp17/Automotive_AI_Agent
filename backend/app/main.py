@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 from agents.orchestrator import Orchestrator
 from reports.trip_report import build_trip_report
 from services.alerts import cockpit_payload, evaluate_alerts
+from simulator.bus import get_bus, publish_vehicle_frames
 from simulator.vehicle import get_simulator
 from speech.azure_speech import get_speech_client
 
@@ -26,16 +27,24 @@ async def _sim_loop() -> None:
     while True:
         await asyncio.sleep(TICK_SECONDS)
         sim.tick(TICK_SECONDS)
+        publish_vehicle_frames()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from simulator.bus import can_mode
+    from simulator.can_bridge import start_bridge, stop_bridge
+
     app.state.orchestrator = Orchestrator()
+    if can_mode():
+        start_bridge()
+        publish_vehicle_frames()
     task = asyncio.create_task(_sim_loop())
     yield
     task.cancel()
     with contextlib.suppress(asyncio.CancelledError):
         await task
+    stop_bridge()
 
 
 app = FastAPI(title="AI Cabin Copilot", version="0.1.0", lifespan=lifespan)
@@ -73,8 +82,19 @@ def alerts():
 
 @app.post("/vehicle/temperature")
 def vehicle_temperature(req: TemperatureRequest):
-    applied = get_simulator().set_temperature(req.celsius)
+    applied = get_bus().write_signal("hvac.target_temp_c", req.celsius)
     return {"target_temp_c": applied}
+
+
+@app.get("/vehicle/can")
+def vehicle_can():
+    """Last virtual CAN frames (empty when VEHICLE_BUS=sim)."""
+    from simulator.bus import can_mode
+    from simulator.can_bridge import get_bridge
+
+    if not can_mode():
+        return {"enabled": False, "frames": []}
+    return {"enabled": True, "frames": get_bridge().recent_frames()}
 
 
 @app.websocket("/vehicle/ws")

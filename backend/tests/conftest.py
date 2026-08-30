@@ -7,6 +7,7 @@ from pathlib import Path
 # download in tests).
 os.environ["MOCK_MODE"] = "true"
 os.environ["LOCAL_STT"] = "false"
+os.environ["VEHICLE_BUS"] = "sim"
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BACKEND_DIR))

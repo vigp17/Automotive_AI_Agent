@@ -33,6 +33,9 @@ class Settings(BaseSettings):
 
     memory_db_path: str = str(DATA_DIR / "memory.sqlite")
 
+    # sim = in-process VehicleSimulator. can = python-can virtual bus (Phase 5).
+    vehicle_bus: str = "sim"
+
 
 @lru_cache
 def get_settings() -> Settings:

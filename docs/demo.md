@@ -33,3 +33,6 @@ Open http://localhost:5173 and walk through:
 8. **Report** - `curl localhost:8000/report` returns the markdown trip report.
 9. **Memory** - follow-ups share a session: the SQLite checkpointer keeps per-session
    conversation history across requests.
+10. **Virtual CAN** - set `VEHICLE_BUS=can` in `.env` and restart the backend. Agent
+    HVAC/battery reads now travel as CAN frames on a python-can virtual bus. Inspect
+    recent frames: `curl localhost:8000/vehicle/can`. Default `VEHICLE_BUS=sim` is unchanged.
