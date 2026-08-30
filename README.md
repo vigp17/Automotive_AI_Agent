@@ -81,6 +81,10 @@ docker compose up --build
 cd backend && ../.venv/bin/python -m pytest
 ```
 
+## Branch workflow
+
+`main` is protected: changes go through a feature branch and pull request, and CI must pass before merge. See [`docs/branching.md`](docs/branching.md).
+
 ---
 
 ## Architecture
