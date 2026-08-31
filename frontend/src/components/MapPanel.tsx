@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, MutableRefObject, useEffect, useRef, useState } from "react";
 import {
   CircleMarker,
   MapContainer,
@@ -21,39 +21,43 @@ const TILE_ATTRIBUTION =
 // Quick destinations known to the geocoder (see backend KNOWN_PLACES).
 const FAVORITES = ["Home", "Office", "Airport"];
 
-/** Keeps the vehicle in view as it moves without fighting the user's zoom. */
-function FollowVehicle({ lat, lon, driving }: { lat: number; lon: number; driving: boolean }) {
-  const map = useMap();
-  useEffect(() => {
-    if (!driving) return;
-    if (!map.getBounds().pad(-0.2).contains([lat, lon])) {
-      map.panTo([lat, lon], { animate: true });
-    }
-  }, [map, lat, lon, driving]);
-  return null;
-}
-
-/** Zooms to fit the route once when a new trip starts. */
+/** Fit the new route once. Do not re-run while the user is panning. */
 function FitRoute({ routeKey, route }: { routeKey: string; route: [number, number][] }) {
   const map = useMap();
   useEffect(() => {
     if (route.length > 1) {
-      map.fitBounds(route, { padding: [40, 40] });
+      map.fitBounds(route, { padding: [40, 40], animate: true });
     }
   }, [map, routeKey]);
   return null;
 }
 
 /** Drops a pin where the user taps so they can confirm "Drive here".
-    Ignore clicks that originated on a popup or overlay control. */
+    Ignore clicks that originated on a popup or overlay control, and ignore
+    the click Leaflet fires at the end of a drag. */
 function TapPin({ onPin }: { onPin: (lat: number, lon: number) => void }) {
+  const dragged = useRef(false);
   useMapEvents({
+    dragstart: () => {
+      dragged.current = true;
+    },
+    dragend: () => {
+      window.setTimeout(() => {
+        dragged.current = false;
+      }, 0);
+    },
     click: (e) => {
+      if (dragged.current) return;
       const target = e.originalEvent.target as HTMLElement | null;
       if (target?.closest(".leaflet-popup, .map-search, .map-favorites, .pin-card")) return;
       onPin(e.latlng.lat, e.latlng.lng);
     },
   });
+  return null;
+}
+
+function CaptureMap({ mapRef }: { mapRef: MutableRefObject<ReturnType<typeof useMap> | null> }) {
+  mapRef.current = useMap();
   return null;
 }
 
@@ -71,6 +75,8 @@ export default function MapPanel({
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [searching, setSearching] = useState(false);
   const parked = Boolean(state && !state.driving);
+  const startCenter = useRef<[number, number]>([47.6062, -122.3321]);
+  const mapRef = useRef<ReturnType<typeof useMap> | null>(null);
 
   useEffect(() => {
     if (!parked) {
@@ -142,13 +148,14 @@ export default function MapPanel({
   return (
     <div className="map-panel">
       <MapContainer
-        center={[lat, lon]}
+        center={startCenter.current}
         zoom={12}
         className="map-container"
         zoomControl={false}
         attributionControl={false}
       >
-        <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} className="dark-tiles" />
+        <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
+        <CaptureMap mapRef={mapRef} />
         <TapPin onPin={(plat, plon) => setPin({ lat: plat, lon: plon })} />
         {fullPath.length > 1 && (
           <Polyline
@@ -183,7 +190,6 @@ export default function MapPanel({
             pathOptions={{ color: "#4fc3f7", fillColor: "#4fc3f7", fillOpacity: 0.95 }}
           />
         )}
-        <FollowVehicle lat={lat} lon={lon} driving={state.driving} />
         <FitRoute routeKey={state.trip?.destination ?? ""} route={route} />
       </MapContainer>
       <div className="map-search">
@@ -259,6 +265,18 @@ export default function MapPanel({
             : parked
               ? "Parked — search, tap the map, or pick a favorite"
               : "No active trip"}
+        <button
+          type="button"
+          className="recenter-btn"
+          onClick={() => {
+            const map = mapRef.current;
+            if (!map) return;
+            if (route.length > 1) map.fitBounds(route, { padding: [40, 40] });
+            else map.panTo([lat, lon]);
+          }}
+        >
+          Recenter
+        </button>
       </div>
     </div>
   );
