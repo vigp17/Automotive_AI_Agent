@@ -13,3 +13,4 @@ frontend/dist/
 backend/data/memory.sqlite*
 *.sqlite-wal
 *.sqlite-shm
+*.tsbuildinfo
