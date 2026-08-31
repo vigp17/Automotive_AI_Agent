@@ -58,12 +58,18 @@ class MockMapsClient:
 
     async def route(self, origin: tuple[float, float], destination: str) -> dict:
         dest = await self.geocode(destination)
+        return await self.route_to_coords(origin, dest, destination)
+
+    async def route_to_coords(
+        self, origin: tuple[float, float], dest: tuple[float, float], label: str
+    ) -> dict:
+        """Route to explicit coordinates (e.g. a map tap) without geocoding."""
         straight = haversine_km(origin[0], origin[1], dest[0], dest[1])
         distance_km = round(straight * 1.25, 1)  # road factor
-        traffic_delay_min = hashlib.sha256(destination.lower().encode()).digest()[2] % 9
+        traffic_delay_min = hashlib.sha256(label.lower().encode()).digest()[2] % 9
         duration_min = round(distance_km / AVERAGE_SPEED_KPH * 60 + traffic_delay_min, 1)
         return {
-            "destination": destination,
+            "destination": label,
             "dest_lat": dest[0],
             "dest_lon": dest[1],
             "distance_km": distance_km,
@@ -93,6 +99,11 @@ class AzureMapsClient:
 
     async def route(self, origin: tuple[float, float], destination: str) -> dict:
         dest = await self.geocode(destination)
+        return await self.route_to_coords(origin, dest, destination)
+
+    async def route_to_coords(
+        self, origin: tuple[float, float], dest: tuple[float, float], label: str
+    ) -> dict:
         async with httpx.AsyncClient(timeout=20) as client:
             resp = await client.get(
                 f"{self.BASE}/route/directions/json",
@@ -111,7 +122,7 @@ class AzureMapsClient:
                 for p in leg["points"]
             ]
         return {
-            "destination": destination,
+            "destination": label,
             "dest_lat": dest[0],
             "dest_lon": dest[1],
             "distance_km": round(summary["lengthInMeters"] / 1000, 1),

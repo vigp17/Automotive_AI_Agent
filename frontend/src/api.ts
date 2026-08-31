@@ -57,6 +57,27 @@ export async function sendVoice(audio: Blob, sessionId: string): Promise<VoiceRe
   return resp.json();
 }
 
+export interface NavigateResponse {
+  destination: string;
+  distance_km: number;
+  eta_min: number;
+  traffic_delay_min: number;
+}
+
+export async function navigateTo(
+  lat: number,
+  lon: number,
+  label = "Dropped pin",
+): Promise<NavigateResponse> {
+  const resp = await fetch("/navigate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ lat, lon, label }),
+  });
+  if (!resp.ok) throw new Error(`navigate failed: ${resp.status}`);
+  return resp.json();
+}
+
 export async function setTemperature(celsius: number): Promise<void> {
   await fetch("/vehicle/temperature", {
     method: "POST",

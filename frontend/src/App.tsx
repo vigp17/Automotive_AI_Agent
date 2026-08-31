@@ -44,7 +44,7 @@ export default function App() {
       )}
       <main className="layout">
         <VehicleWidgets state={state} />
-        <MapPanel state={state} />
+        <MapPanel state={state} onPrompt={setQueuedPrompt} />
         <ChatPanel
           sessionId={SESSION_ID}
           queuedPrompt={queuedPrompt}

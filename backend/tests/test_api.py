@@ -41,6 +41,25 @@ def test_chat_navigation_starts_trip(client):
     assert sim.driving and sim.trip is not None
 
 
+def test_navigate_to_coordinates(client):
+    resp = client.post(
+        "/navigate", json={"lat": 47.4502, "lon": -122.3088, "label": "SeaTac pin"}
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["destination"] == "SeaTac pin"
+    assert body["distance_km"] > 0 and body["eta_min"] > 0
+    sim = get_simulator()
+    assert sim.driving and sim.trip is not None
+    assert sim.trip.destination == "SeaTac pin"
+    assert sim.trip.route[-1] == (47.4502, -122.3088)
+
+
+def test_navigate_rejects_bad_coordinates(client):
+    resp = client.post("/navigate", json={"lat": 95.0, "lon": 0.0})
+    assert resp.status_code == 422
+
+
 def test_chat_memory_is_per_session(client):
     client.post("/chat", json={"message": "hello", "session_id": "a"})
     resp = client.post("/chat", json={"message": "hello", "session_id": "b"})
