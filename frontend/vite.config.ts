@@ -11,6 +11,8 @@ export default defineConfig({
       "/chat": backend,
       "/voice": backend,
       "/report": backend,
+      "/navigate": backend,
+      "/places": backend,
       "/vehicle": { target: backend, ws: true },
     },
   },

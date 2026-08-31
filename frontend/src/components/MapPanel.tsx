@@ -3,7 +3,6 @@ import {
   CircleMarker,
   MapContainer,
   Polyline,
-  Popup,
   TileLayer,
   Tooltip,
   useMap,
@@ -45,10 +44,15 @@ function FitRoute({ routeKey, route }: { routeKey: string; route: [number, numbe
   return null;
 }
 
-/** Drops a pin where the user taps so they can confirm "Drive here". */
+/** Drops a pin where the user taps so they can confirm "Drive here".
+    Ignore clicks that originated on a popup or overlay control. */
 function TapPin({ onPin }: { onPin: (lat: number, lon: number) => void }) {
   useMapEvents({
-    click: (e) => onPin(e.latlng.lat, e.latlng.lng),
+    click: (e) => {
+      const target = e.originalEvent.target as HTMLElement | null;
+      if (target?.closest(".leaflet-popup, .map-search, .map-favorites, .pin-card")) return;
+      onPin(e.latlng.lat, e.latlng.lng);
+    },
   });
   return null;
 }
@@ -62,6 +66,7 @@ export default function MapPanel({
 }) {
   const [pin, setPin] = useState<{ lat: number; lon: number } | null>(null);
   const [navBusy, setNavBusy] = useState(false);
+  const [navError, setNavError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [searching, setSearching] = useState(false);
@@ -113,13 +118,14 @@ export default function MapPanel({
   const driveTo = async (destLat: number, destLon: number, label: string) => {
     if (navBusy) return;
     setNavBusy(true);
+    setNavError(null);
     try {
       await navigateTo(destLat, destLon, label);
       setPin(null);
       setQuery("");
       setSuggestions([]);
     } catch {
-      // keep the picker open so the user can retry
+      setNavError("Couldn't start navigation — try again");
     } finally {
       setNavBusy(false);
     }
@@ -171,20 +177,11 @@ export default function MapPanel({
           </Tooltip>
         </CircleMarker>
         {pin && (
-          <Popup position={[pin.lat, pin.lon]} eventHandlers={{ remove: () => setPin(null) }}>
-            <div className="pin-popup">
-              <div className="pin-coords">
-                {pin.lat.toFixed(4)}, {pin.lon.toFixed(4)}
-              </div>
-              <button
-                className="pin-go"
-                onClick={() => void driveTo(pin.lat, pin.lon, "Dropped pin")}
-                disabled={navBusy}
-              >
-                {navBusy ? "Routing..." : "Drive here"}
-              </button>
-            </div>
-          </Popup>
+          <CircleMarker
+            center={[pin.lat, pin.lon]}
+            radius={8}
+            pathOptions={{ color: "#4fc3f7", fillColor: "#4fc3f7", fillOpacity: 0.95 }}
+          />
         )}
         <FollowVehicle lat={lat} lon={lon} driving={state.driving} />
         <FitRoute routeKey={state.trip?.destination ?? ""} route={route} />
@@ -233,6 +230,27 @@ export default function MapPanel({
           </button>
         ))}
       </div>
+      {pin && (
+        <div className="pin-card">
+          <div className="pin-coords">
+            {pin.lat.toFixed(4)}, {pin.lon.toFixed(4)}
+          </div>
+          {navError && <div className="pin-error">{navError}</div>}
+          <div className="pin-actions">
+            <button className="pin-cancel" type="button" onClick={() => setPin(null)}>
+              Cancel
+            </button>
+            <button
+              className="pin-go"
+              type="button"
+              onClick={() => void driveTo(pin.lat, pin.lon, "Dropped pin")}
+              disabled={navBusy}
+            >
+              {navBusy ? "Routing..." : "Drive here"}
+            </button>
+          </div>
+        </div>
+      )}
       <div className="map-overlay">
         {state.trip?.active
           ? `En route to ${state.trip.destination}`
