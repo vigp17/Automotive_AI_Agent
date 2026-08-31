@@ -7,6 +7,7 @@ def test_keyword_classification():
     assert classify_by_keywords("Set temperature to 21") == "hvac"
     assert classify_by_keywords("Do I have enough battery?") == "ev"
     assert classify_by_keywords("Navigate to the airport") == "navigation"
+    assert classify_by_keywords("Cancel the trip") == "navigation"
     assert classify_by_keywords("What's on my calendar?") == "calendar"
     assert classify_by_keywords("Tell me a story") == "chat"
 

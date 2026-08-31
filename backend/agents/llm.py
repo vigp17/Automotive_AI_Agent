@@ -65,6 +65,16 @@ def _match_tool(text: str, available: set[str]):
     ):
         return "get_soc", {}
 
+    if "cancel_navigation" in available and (
+        "cancel" in text
+        or "abort" in text
+        or "end trip" in text
+        or "stop the trip" in text
+        or "stop nav" in text
+        or ("stop" in text and ("navigat" in text or "trip" in text or "route" in text))
+    ):
+        return "cancel_navigation", {}
+
     if "get_route" in available and (
         "navigate" in text
         or "route" in text
@@ -125,6 +135,15 @@ def summarize_tool_result(tool_name: str, payload: str) -> str:
             f"ETA about {data.get('eta_min')} minutes "
             f"({data.get('traffic_delay_min')} min of traffic delay). Navigation started."
         )
+    if tool_name == "cancel_navigation":
+        if data.get("cancelled"):
+            dest = data.get("destination")
+            return (
+                f"Okay, cancelling the trip to {dest}. Pulling over."
+                if dest
+                else "Okay, navigation cancelled."
+            )
+        return "There's no active trip to cancel."
     if tool_name == "plan_charging_stop":
         if data.get("charging_required"):
             station = data.get("recommended_station") or data.get("nearest_station") or {}

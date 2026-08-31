@@ -94,6 +94,12 @@ export async function navigateTo(
   return resp.json();
 }
 
+export async function cancelTrip(): Promise<{ cancelled: boolean; destination: string | null }> {
+  const resp = await fetch("/navigate/cancel", { method: "POST" });
+  if (!resp.ok) throw new Error(`cancel failed: ${resp.status}`);
+  return resp.json();
+}
+
 export async function setTemperature(celsius: number): Promise<void> {
   await fetch("/vehicle/temperature", {
     method: "POST",

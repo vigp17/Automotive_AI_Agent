@@ -9,7 +9,7 @@ import {
   useMapEvents,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { navigateTo, PlaceSuggestion, searchPlaces, VehicleState } from "../api";
+import { cancelTrip, navigateTo, PlaceSuggestion, searchPlaces, VehicleState } from "../api";
 
 // OpenStreetMap tiles (keyless); a CSS invert filter (.dark-tiles) restyles
 // them to match the dark cockpit theme. CARTO basemaps now watermark
@@ -145,6 +145,20 @@ export default function MapPanel({
     }
   };
 
+  const onCancelTrip = async () => {
+    if (navBusy || !state?.trip?.active) return;
+    setNavBusy(true);
+    setNavError(null);
+    try {
+      await cancelTrip();
+      setPin(null);
+    } catch {
+      setNavError("Couldn't cancel the trip — try again");
+    } finally {
+      setNavBusy(false);
+    }
+  };
+
   return (
     <div className="map-panel">
       <MapContainer
@@ -265,6 +279,16 @@ export default function MapPanel({
             : parked
               ? "Parked — search, tap the map, or pick a favorite"
               : "No active trip"}
+        {state.trip?.active && (
+          <button
+            type="button"
+            className="cancel-trip-btn"
+            onClick={() => void onCancelTrip()}
+            disabled={navBusy}
+          >
+            {navBusy ? "Cancelling..." : "Cancel trip"}
+          </button>
+        )}
         <button
           type="button"
           className="recenter-btn"

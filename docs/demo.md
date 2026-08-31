@@ -24,8 +24,9 @@ Open http://localhost:5173 and walk through:
    moves (hover the green marker for live speed). While **parked**, type in the
    **search box** (try "redmond" or "tacoma") and pick a result. Keyboard search
    locks once the vehicle is moving — same as a production HMI — so use voice or
-   a favorite to change destination. You can also **tap anywhere on the map** and
-   confirm "Drive here", or hit the **Home / Office / Airport** chips.
+   a favorite to change destination. **Cancel trip** on the map overlay (or say
+   "cancel the trip") stops navigation and parks. You can also **tap anywhere
+   on the map** and confirm "Drive here", or hit the **Home / Office / Airport** chips.
 5. **Calendar agent** - "What's on my calendar?" lists the seeded meetings.
 6. **Cross-agent trip planning** - "Get me to my next meeting" chains calendar ->
    route -> energy check -> arrival verdict, and starts navigation. To force a charging

@@ -13,6 +13,7 @@ const SUGGESTIONS = [
   "Do I have enough battery for the airport?",
   "Set temperature to 22",
   "What's on my calendar?",
+  "Cancel the trip",
 ];
 
 export default function ChatPanel({

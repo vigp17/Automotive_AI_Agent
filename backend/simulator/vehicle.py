@@ -115,6 +115,16 @@ class VehicleSimulator:
             self.driving = False
             self.speed_kph = 0.0
 
+    def cancel_trip(self) -> dict:
+        """Abort navigation: park immediately and clear the route."""
+        with self._lock:
+            destination = self.trip.destination if self.trip else None
+            had_trip = self.trip is not None
+            self.driving = False
+            self.speed_kph = 0.0
+            self.trip = None
+            return {"cancelled": had_trip, "destination": destination}
+
     def trip_elapsed_min(self) -> float:
         if not self.trip:
             return 0.0

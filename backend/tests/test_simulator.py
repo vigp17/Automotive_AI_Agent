@@ -45,6 +45,19 @@ def test_trip_completes_and_stops():
     assert sim.speed_kph == 0.0
 
 
+def test_cancel_trip_clears_route():
+    sim = make_sim()
+    sim.set_route([(47.7, -122.3)], destination="north")
+    assert sim.driving and sim.trip is not None
+    result = sim.cancel_trip()
+    assert result["cancelled"] is True
+    assert result["destination"] == "north"
+    assert not sim.driving
+    assert sim.trip is None
+    assert sim.speed_kph == 0.0
+    assert sim.cancel_trip()["cancelled"] is False
+
+
 def test_range_reflects_soc():
     sim = make_sim()
     sim.soc = 100.0

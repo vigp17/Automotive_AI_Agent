@@ -54,7 +54,26 @@ def classify_by_keywords(text: str) -> str:
         return "hvac"
     if any(w in t for w in ("battery", "soc", "charging", "charger", "charge", "range")):
         return "ev"
-    if any(w in t for w in ("navigate", "route", "take me", "drive", "directions", "eta", "traffic", "where am i", "how long", "speed")):
+    if any(
+        w in t
+        for w in (
+            "cancel",
+            "abort",
+            "end trip",
+            "stop the trip",
+            "stop navigation",
+            "navigate",
+            "route",
+            "take me",
+            "drive",
+            "directions",
+            "eta",
+            "traffic",
+            "where am i",
+            "how long",
+            "speed",
+        )
+    ):
         return "navigation"
     if any(w in t for w in _MEETING_WORDS) or "schedule" in t:
         return "calendar"

@@ -38,3 +38,12 @@ def get_route(destination: str) -> str:
             "navigation_started": True,
         }
     )
+
+
+@tool
+def cancel_navigation() -> str:
+    """Cancel the current trip. Stops the vehicle and clears the route.
+    Use when the driver says cancel, abort, stop navigation, or end the trip."""
+    sim = get_simulator()
+    result = sim.cancel_trip()
+    return json.dumps(result)

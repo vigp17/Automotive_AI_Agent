@@ -205,6 +205,15 @@ async def navigate(req: NavigateRequest):
     }
 
 
+@app.post("/navigate/cancel")
+def cancel_navigation_endpoint():
+    """Abort the current trip: park and clear the route."""
+    result = get_simulator().cancel_trip()
+    if not result["cancelled"]:
+        return {"cancelled": False, "destination": None}
+    return result
+
+
 @app.get("/vehicle/can")
 def vehicle_can(request: Request):
     """Last virtual CAN frames (empty when VEHICLE_BUS=sim)."""

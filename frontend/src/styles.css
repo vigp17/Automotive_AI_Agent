@@ -281,6 +281,18 @@ body {
 }
 .recenter-btn:hover { border-color: var(--accent); }
 
+.cancel-trip-btn {
+  background: transparent;
+  border: 1px solid var(--bad);
+  color: var(--bad);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.cancel-trip-btn:hover { background: rgba(247, 95, 95, 0.12); }
+.cancel-trip-btn:disabled { opacity: 0.6; cursor: default; }
+
 .leaflet-tooltip {
   background: rgba(13, 17, 23, 0.9);
   border: 1px solid var(--border);
