@@ -60,6 +60,50 @@ def test_navigate_rejects_bad_coordinates(client):
     assert resp.status_code == 422
 
 
+def test_cancel_navigation_endpoint(client):
+    client.post("/navigate", json={"lat": 47.45, "lon": -122.31, "label": "pin"})
+    assert get_simulator().driving
+    resp = client.post("/navigate/cancel")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["cancelled"] is True
+    assert body["destination"] == "pin"
+    sim = get_simulator()
+    assert not sim.driving and sim.trip is None
+
+
+def test_chat_cancels_trip(client):
+    client.post("/chat", json={"message": "Navigate to the airport"})
+    assert get_simulator().driving
+    resp = client.post("/chat", json={"message": "Cancel the trip"})
+    body = resp.json()
+    assert body["intent"] == "navigation"
+    assert "cancel" in body["reply"].lower()
+    assert not get_simulator().driving
+    assert get_simulator().trip is None
+
+
+def test_place_search_parked(client):
+    resp = client.get("/places/search", params={"q": "airport"})
+    assert resp.status_code == 200
+    results = resp.json()["results"]
+    assert results
+    assert any("airport" in r["label"].lower() or "seatac" in r["label"].lower() for r in results)
+    assert "lat" in results[0] and "lon" in results[0]
+
+
+def test_place_search_locked_while_driving(client):
+    client.post("/navigate", json={"lat": 47.45, "lon": -122.31, "label": "pin"})
+    resp = client.get("/places/search", params={"q": "home"})
+    assert resp.status_code == 409
+    assert "parked" in resp.json()["detail"].lower()
+
+
+def test_place_search_requires_query(client):
+    resp = client.get("/places/search")
+    assert resp.status_code == 400
+
+
 def test_chat_memory_is_per_session(client):
     client.post("/chat", json={"message": "hello", "session_id": "a"})
     resp = client.post("/chat", json={"message": "hello", "session_id": "b"})

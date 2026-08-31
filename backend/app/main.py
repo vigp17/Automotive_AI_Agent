@@ -9,7 +9,7 @@ import html
 import json
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, File, Form, Request, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -163,6 +163,25 @@ def vehicle_temperature(req: TemperatureRequest):
     return {"target_temp_c": applied}
 
 
+@app.get("/places/search")
+async def places_search(q: str = ""):
+    """Typeahead destination search. Locked while the vehicle is moving,
+    matching production HMI policy (keyboard entry only in Park). Voice
+    and one-tap favorites stay available while driving."""
+    from services.maps import get_maps_client
+
+    query = q.strip()
+    if not query:
+        raise HTTPException(status_code=400, detail="q is required")
+    if get_simulator().driving:
+        raise HTTPException(
+            status_code=409,
+            detail="Destination search is available only when parked",
+        )
+    results = await get_maps_client().search(query)
+    return {"query": query, "results": results}
+
+
 @app.post("/navigate")
 async def navigate(req: NavigateRequest):
     """Start navigation to a point tapped on the dashboard map."""
@@ -184,6 +203,15 @@ async def navigate(req: NavigateRequest):
         "eta_min": route["duration_min"],
         "traffic_delay_min": route["traffic_delay_min"],
     }
+
+
+@app.post("/navigate/cancel")
+def cancel_navigation_endpoint():
+    """Abort the current trip: park and clear the route."""
+    result = get_simulator().cancel_trip()
+    if not result["cancelled"]:
+        return {"cancelled": False, "destination": None}
+    return result
 
 
 @app.get("/vehicle/can")

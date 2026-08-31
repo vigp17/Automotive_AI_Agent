@@ -64,6 +64,22 @@ export interface NavigateResponse {
   traffic_delay_min: number;
 }
 
+export interface PlaceSuggestion {
+  label: string;
+  lat: number;
+  lon: number;
+}
+
+export async function searchPlaces(query: string): Promise<PlaceSuggestion[]> {
+  const resp = await fetch(`/places/search?q=${encodeURIComponent(query)}`);
+  if (resp.status === 409) {
+    throw new Error("search locked");
+  }
+  if (!resp.ok) throw new Error(`search failed: ${resp.status}`);
+  const body = await resp.json();
+  return body.results ?? [];
+}
+
 export async function navigateTo(
   lat: number,
   lon: number,
@@ -75,6 +91,12 @@ export async function navigateTo(
     body: JSON.stringify({ lat, lon, label }),
   });
   if (!resp.ok) throw new Error(`navigate failed: ${resp.status}`);
+  return resp.json();
+}
+
+export async function cancelTrip(): Promise<{ cancelled: boolean; destination: string | null }> {
+  const resp = await fetch("/navigate/cancel", { method: "POST" });
+  if (!resp.ok) throw new Error(`cancel failed: ${resp.status}`);
   return resp.json();
 }
 

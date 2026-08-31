@@ -32,7 +32,7 @@ A **voice-enabled, multi-agent in-cabin assistant** for software-defined vehicle
 ## Features
 
 - **Voice assistant** — hold-to-talk mic; speech in/out via Web Speech API, local Whisper, or Azure Speech (`/voice`)
-- **Live map** — Leaflet dark map with route polyline, moving vehicle, and destination marker (no API key); tap anywhere to "Drive here", or use the Home/Office/Airport favorites
+- **Live map** — Leaflet dark map with route polyline, moving vehicle, and destination marker (no API key); search a destination (Park only), tap to "Drive here", or use Home/Office/Airport favorites
 - **Navigation agent** — routing, ETA, and traffic via Azure Maps (mock geocoder offline)
 - **EV charging planner** — SOC analysis and charging-stop recommendations from a station dataset
 - **Calendar integration** — JSON-backed schedule with meeting-aware trip planning

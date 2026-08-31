@@ -28,6 +28,66 @@ KNOWN_PLACES = {
     "home": (47.6802, -122.355),
 }
 
+# Real city coordinates so mock routing isn't "15 km from Seattle" for
+# Detroit, Chicago, etc. Offline — no geocoding API required.
+KNOWN_CITIES = {
+    "detroit": (42.3314, -83.0458),
+    "chicago": (41.8781, -87.6298),
+    "new york": (40.7128, -74.0060),
+    "nyc": (40.7128, -74.0060),
+    "los angeles": (34.0522, -118.2437),
+    "san francisco": (37.7749, -122.4194),
+    "portland": (45.5152, -122.6784),
+    "vancouver": (49.2827, -123.1207),
+    "spokane": (47.6588, -117.4260),
+    "boise": (43.6150, -116.2023),
+    "denver": (39.7392, -104.9903),
+    "austin": (30.2672, -97.7431),
+    "boston": (42.3601, -71.0589),
+    "miami": (25.7617, -80.1918),
+}
+
+ALL_PLACES = {**KNOWN_CITIES, **KNOWN_PLACES}
+
+
+def lookup_place(query: str) -> tuple[float, float] | None:
+    """Longest substring match against local POIs and known cities."""
+    key = query.strip().lower()
+    if not key:
+        return None
+    matches = [
+        (name, coords)
+        for name, coords in ALL_PLACES.items()
+        if name == key or (len(name) >= 3 and (name in key or key in name))
+    ]
+    if not matches:
+        return None
+    matches.sort(key=lambda item: len(item[0]), reverse=True)
+    return matches[0][1]
+
+
+def _place_label(name: str) -> str:
+    return " ".join(part.capitalize() for part in name.replace("-", " ").split())
+
+
+def search_known_places(query: str, limit: int = 5) -> list[dict]:
+    """Match the mock geocoder table, de-duplicated by coordinates."""
+    key = query.strip().lower()
+    if not key:
+        return []
+    seen: set[tuple[float, float]] = set()
+    results: list[dict] = []
+    for name, coords in ALL_PLACES.items():
+        if key not in name and name not in key:
+            continue
+        if coords in seen:
+            continue
+        seen.add(coords)
+        results.append({"label": _place_label(name), "lat": coords[0], "lon": coords[1]})
+        if len(results) >= limit:
+            break
+    return results
+
 
 def _interpolate(origin: tuple[float, float], dest: tuple[float, float], n: int = 8):
     return [
@@ -39,22 +99,39 @@ def _interpolate(origin: tuple[float, float], dest: tuple[float, float], n: int 
     ]
 
 
+def _cruise_kph(distance_km: float) -> float:
+    # Local streets vs highway — a 26-minute "Seattle to Detroit" was the
+    # city-speed model applied to a fake nearby pin.
+    return 90.0 if distance_km >= 150 else AVERAGE_SPEED_KPH
+
+
+def _waypoint_count(distance_km: float) -> int:
+    return max(8, min(20, int(distance_km / 200) + 8))
+
+
 class MockMapsClient:
     """Deterministic routing: geocode from a known-places table (or a stable
     pseudo-random point ~15-25 km away for unknown names), straight-line route
     with a road-factor, traffic delay derived from the name hash."""
 
     async def geocode(self, query: str) -> tuple[float, float]:
-        key = query.strip().lower()
-        for name, coords in KNOWN_PLACES.items():
-            if name in key:
-                return coords
-        digest = hashlib.sha256(key.encode()).digest()
+        known = lookup_place(query)
+        if known:
+            return known
+        digest = hashlib.sha256(query.strip().lower().encode()).digest()
         angle = digest[0] / 255.0 * 2 * math.pi
         dist_km = 15.0 + digest[1] / 255.0 * 10.0
         dlat = dist_km / 111.0 * math.cos(angle)
         dlon = dist_km / 78.0 * math.sin(angle)
         return (47.6062 + dlat, -122.3321 + dlon)
+
+    async def search(self, query: str, limit: int = 5) -> list[dict]:
+        """Typeahead suggestions for the HMI search box (parked only)."""
+        hits = search_known_places(query, limit=limit)
+        if hits:
+            return hits
+        lat, lon = await self.geocode(query)
+        return [{"label": query.strip(), "lat": lat, "lon": lon}]
 
     async def route(self, origin: tuple[float, float], destination: str) -> dict:
         dest = await self.geocode(destination)
@@ -67,7 +144,7 @@ class MockMapsClient:
         straight = haversine_km(origin[0], origin[1], dest[0], dest[1])
         distance_km = round(straight * 1.25, 1)  # road factor
         traffic_delay_min = hashlib.sha256(label.lower().encode()).digest()[2] % 9
-        duration_min = round(distance_km / AVERAGE_SPEED_KPH * 60 + traffic_delay_min, 1)
+        duration_min = round(distance_km / _cruise_kph(distance_km) * 60 + traffic_delay_min, 1)
         return {
             "destination": label,
             "dest_lat": dest[0],
@@ -75,7 +152,7 @@ class MockMapsClient:
             "distance_km": distance_km,
             "duration_min": duration_min,
             "traffic_delay_min": traffic_delay_min,
-            "points": _interpolate(origin, dest),
+            "points": _interpolate(origin, dest, n=_waypoint_count(distance_km)),
         }
 
 
@@ -96,6 +173,29 @@ class AzureMapsClient:
             resp.raise_for_status()
             pos = resp.json()["results"][0]["position"]
             return (pos["lat"], pos["lon"])
+
+    async def search(self, query: str, limit: int = 5) -> list[dict]:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(
+                f"{self.BASE}/search/fuzzy/json",
+                params={
+                    "api-version": "1.0",
+                    "subscription-key": self.key,
+                    "query": query,
+                    "limit": limit,
+                },
+            )
+            resp.raise_for_status()
+            results = []
+            for item in resp.json().get("results", [])[:limit]:
+                pos = item.get("position") or {}
+                if "lat" not in pos or "lon" not in pos:
+                    continue
+                poi = item.get("poi") or {}
+                address = item.get("address") or {}
+                label = poi.get("name") or address.get("freeformAddress") or query
+                results.append({"label": label, "lat": pos["lat"], "lon": pos["lon"]})
+            return results
 
     async def route(self, origin: tuple[float, float], destination: str) -> dict:
         dest = await self.geocode(destination)
