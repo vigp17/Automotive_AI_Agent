@@ -91,6 +91,14 @@ class TemperatureRequest(BaseModel):
     celsius: float
 
 
+class NavigateRequest(BaseModel):
+    """Destination picked on the map (coordinates, no geocoding needed)."""
+
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+    label: str = "Dropped pin"
+
+
 @app.get("/", response_class=HTMLResponse)
 def root():
     return """<!doctype html>
@@ -153,6 +161,29 @@ def alerts(request: Request):
 def vehicle_temperature(req: TemperatureRequest):
     applied = get_bus().write_signal("hvac.target_temp_c", req.celsius)
     return {"target_temp_c": applied}
+
+
+@app.post("/navigate")
+async def navigate(req: NavigateRequest):
+    """Start navigation to a point tapped on the dashboard map."""
+    from services.maps import get_maps_client
+
+    sim = get_simulator()
+    route = await get_maps_client().route_to_coords(
+        (sim.lat, sim.lon), (req.lat, req.lon), req.label
+    )
+    sim.set_route(
+        route["points"],
+        destination=req.label,
+        eta_min=route["duration_min"],
+        distance_km=route["distance_km"],
+    )
+    return {
+        "destination": req.label,
+        "distance_km": route["distance_km"],
+        "eta_min": route["duration_min"],
+        "traffic_delay_min": route["traffic_delay_min"],
+    }
 
 
 @app.get("/vehicle/can")

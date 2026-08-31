@@ -21,7 +21,9 @@ Open http://localhost:5173 and walk through:
 4. **Navigation agent** - "Navigate to the airport" returns distance/ETA/traffic and the
    vehicle starts driving: speed rises, SOC drains, trip progress fills. The center
    **map** draws the route, drops a destination marker, and follows the vehicle as it
-   moves (hover the green marker for live speed).
+   moves (hover the green marker for live speed). You can also **tap anywhere on the
+   map** and confirm "Drive here", or hit the **Home / Office / Airport** favorite
+   chips at the top of the map.
 5. **Calendar agent** - "What's on my calendar?" lists the seeded meetings.
 6. **Cross-agent trip planning** - "Get me to my next meeting" chains calendar ->
    route -> energy check -> arrival verdict, and starts navigation. To force a charging
