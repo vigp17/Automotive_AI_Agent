@@ -5,11 +5,14 @@ from __future__ import annotations
 import asyncio
 import base64
 import contextlib
+import html
+import json
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, File, Form, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, File, Form, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from agents.orchestrator import Orchestrator
@@ -20,6 +23,29 @@ from simulator.vehicle import get_simulator
 from speech.azure_speech import get_speech_client
 
 TICK_SECONDS = 1.0
+
+
+def _as_page(request: Request, title: str, data: dict):
+    """Browsers get a readable HTML page; API clients still get JSON."""
+    if "text/html" not in request.headers.get("accept", ""):
+        return data
+    pretty = html.escape(json.dumps(data, indent=2))
+    return HTMLResponse(
+        f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>{html.escape(title)}</title>
+<style>
+  body {{ font-family: ui-monospace, Menlo, monospace; background: #0d1117; color: #e6edf3;
+         margin: 0; padding: 24px; }}
+  a {{ color: #4fc3f7; }}
+  pre {{ background: #161c26; border: 1px solid #2a3444; border-radius: 12px;
+        padding: 16px; overflow: auto; white-space: pre-wrap; }}
+</style></head>
+<body>
+  <p><a href="/">← API home</a> · <a href="http://localhost:5173">Dashboard</a></p>
+  <h1>{html.escape(title)}</h1>
+  <pre>{pretty}</pre>
+</body></html>"""
+    )
 
 
 async def _sim_loop() -> None:
@@ -65,19 +91,62 @@ class TemperatureRequest(BaseModel):
     celsius: float
 
 
+@app.get("/", response_class=HTMLResponse)
+def root():
+    return """<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>AI Cabin Copilot API</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #0d1117; color: #e6edf3;
+         max-width: 640px; margin: 48px auto; padding: 0 20px; }
+  a { color: #4fc3f7; }
+  .btn { display: inline-block; margin: 16px 12px 16px 0; padding: 12px 18px;
+         background: #2563eb; color: white; text-decoration: none; border-radius: 10px;
+         font-weight: 600; }
+  li { margin: 8px 0; }
+</style></head>
+<body>
+  <h1>AI Cabin Copilot API</h1>
+  <p>This is the backend. The dashboard is a separate app.</p>
+  <p><a class="btn" href="http://localhost:5173">Open cabin dashboard</a>
+     <a class="btn" href="/docs">API docs</a></p>
+  <ul>
+    <li><a href="/vehicle/state">/vehicle/state</a> — live vehicle JSON</li>
+    <li><a href="/vehicle/can">/vehicle/can</a> — recent CAN frames</li>
+    <li><a href="/alerts">/alerts</a> — proactive alerts</li>
+    <li><a href="/healthz">/healthz</a> — health check</li>
+  </ul>
+  <p>Do not open <code>/vehicle/ws</code> in the browser — that is a WebSocket and will look blank.</p>
+</body></html>
+"""
+
+
 @app.get("/healthz")
-def healthz():
-    return {"status": "ok"}
+def healthz(request: Request):
+    return _as_page(request, "healthz", {"status": "ok"})
+
+
+@app.get("/vehicle")
+def vehicle_index(request: Request):
+    return _as_page(
+        request,
+        "vehicle",
+        {
+            "dashboard": "http://localhost:5173",
+            "state": "/vehicle/state",
+            "can": "/vehicle/can",
+            "ws": "/vehicle/ws (WebSocket only — not a web page)",
+        },
+    )
 
 
 @app.get("/vehicle/state")
-def vehicle_state():
-    return cockpit_payload()
+def vehicle_state(request: Request):
+    return _as_page(request, "vehicle/state", cockpit_payload())
 
 
 @app.get("/alerts")
-def alerts():
-    return {"alerts": evaluate_alerts()}
+def alerts(request: Request):
+    return _as_page(request, "alerts", {"alerts": evaluate_alerts()})
 
 
 @app.post("/vehicle/temperature")
@@ -87,14 +156,16 @@ def vehicle_temperature(req: TemperatureRequest):
 
 
 @app.get("/vehicle/can")
-def vehicle_can():
+def vehicle_can(request: Request):
     """Last virtual CAN frames (empty when VEHICLE_BUS=sim)."""
     from simulator.bus import can_mode
     from simulator.can_bridge import get_bridge
 
     if not can_mode():
-        return {"enabled": False, "frames": []}
-    return {"enabled": True, "frames": get_bridge().recent_frames()}
+        payload = {"enabled": False, "frames": []}
+    else:
+        payload = {"enabled": True, "frames": get_bridge().recent_frames()}
+    return _as_page(request, "vehicle/can", payload)
 
 
 @app.websocket("/vehicle/ws")
