@@ -55,6 +55,14 @@ def test_range_reflects_soc():
     assert sim.range_km() == 0.0
 
 
+def test_state_exposes_route_for_map():
+    sim = make_sim()
+    sim.set_route([(47.61, -122.30), (47.62, -122.28)], destination="test")
+    trip = sim.state()["trip"]
+    assert trip is not None
+    assert trip["route"] == [[47.61, -122.3], [47.62, -122.28]]
+
+
 def test_bus_signals():
     sim = make_sim()
     bus = SimulatedBus(sim)

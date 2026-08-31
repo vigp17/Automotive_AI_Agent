@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { openStateSocket, VehicleState } from "./api";
 import AlertBanner from "./components/AlertBanner";
 import ChatPanel from "./components/ChatPanel";
+import MapPanel from "./components/MapPanel";
 import VehicleWidgets from "./components/VehicleWidgets";
 
 const SESSION_ID = `cabin-${Math.random().toString(36).slice(2, 10)}`;
@@ -43,6 +44,7 @@ export default function App() {
       )}
       <main className="layout">
         <VehicleWidgets state={state} />
+        <MapPanel state={state} />
         <ChatPanel
           sessionId={SESSION_ID}
           queuedPrompt={queuedPrompt}

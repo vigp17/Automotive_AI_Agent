@@ -177,19 +177,40 @@ export default function ChatPanel({
     }
   };
 
-  const toggleMic = async () => {
-    if (modeRef.current === "recognition") {
-      recognizerRef.current?.stop();
-      return;
-    }
-    if (modeRef.current === "recorder") {
-      recorderRef.current?.stop();
-      return;
-    }
+  const stopCapture = () => {
+    if (modeRef.current === "recognition") recognizerRef.current?.stop();
+    else if (modeRef.current === "recorder") recorderRef.current?.stop();
+  };
+
+  const startCapture = async () => {
     // Prefer browser-native speech recognition (real STT, no server keys);
     // fall back to recording + server /voice (local Whisper, Azure, or mock).
     if (!startRecognition()) {
       await recordAndSend();
+    }
+  };
+
+  // Hold-to-talk with tap-to-toggle fallback: pressing starts capture; a
+  // release after >350 ms stops it (hold gesture), while a quick tap leaves
+  // it running so a second tap can stop it.
+  const HOLD_THRESHOLD_MS = 350;
+  const pressRef = useRef<{ startedCapture: boolean; at: number } | null>(null);
+
+  const onMicDown = async () => {
+    if (modeRef.current === "idle") {
+      pressRef.current = { startedCapture: true, at: Date.now() };
+      await startCapture();
+    } else {
+      pressRef.current = { startedCapture: false, at: Date.now() };
+    }
+  };
+
+  const onMicUp = () => {
+    const press = pressRef.current;
+    pressRef.current = null;
+    if (!press) return;
+    if (!press.startedCapture || Date.now() - press.at > HOLD_THRESHOLD_MS) {
+      stopCapture();
     }
   };
 
@@ -216,8 +237,11 @@ export default function ChatPanel({
         <button
           type="button"
           className={`mic-btn ${recording ? "recording" : ""}`}
-          onClick={() => void toggleMic()}
-          title={recording ? "Stop recording" : "Speak"}
+          onPointerDown={() => void onMicDown()}
+          onPointerUp={onMicUp}
+          onPointerCancel={onMicUp}
+          onContextMenu={(e) => e.preventDefault()}
+          title={recording ? "Release or tap to stop" : "Hold to talk (or tap to toggle)"}
         >
           {recording ? "◼" : "🎙"}
         </button>

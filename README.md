@@ -31,7 +31,8 @@ A **voice-enabled, multi-agent in-cabin assistant** for software-defined vehicle
 
 ## Features
 
-- **Voice assistant** — speech in/out via Web Speech API, local Whisper, or Azure Speech (`/voice`)
+- **Voice assistant** — hold-to-talk mic; speech in/out via Web Speech API, local Whisper, or Azure Speech (`/voice`)
+- **Live map** — Leaflet dark map with route polyline, moving vehicle, and destination marker (no API key)
 - **Navigation agent** — routing, ETA, and traffic via Azure Maps (mock geocoder offline)
 - **EV charging planner** — SOC analysis and charging-stop recommendations from a station dataset
 - **Calendar integration** — JSON-backed schedule with meeting-aware trip planning
@@ -147,6 +148,7 @@ docs/           Architecture, demo script, screenshots
 - [x] Local Whisper STT (keyless voice)
 - [x] GitHub CI (pytest + frontend build)
 - [x] Phase 5 (virtual): `VehicleBus` + python-can virtual bus (`VEHICLE_BUS=can`)
+- [x] Live cockpit map (Leaflet) + hold-to-talk mic
 - [ ] Phase 5 (hardware): SocketCAN / USB-CAN adapter
 - [ ] Outlook / Teams calendar (Microsoft Graph)
 - [ ] Azure keys wired for live demo

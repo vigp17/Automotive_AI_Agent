@@ -69,11 +69,57 @@ body {
 
 .layout {
   display: grid;
-  grid-template-columns: 360px 1fr;
+  grid-template-columns: 300px 1fr 400px;
   gap: 20px;
   flex: 1;
   min-height: 0;
 }
+
+/* Map */
+.map-panel {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--panel);
+  min-height: 320px;
+}
+
+.map-panel.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+
+.map-container {
+  position: absolute;
+  inset: 0;
+  background: #0a0e14;
+}
+
+.map-overlay {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 1000;
+  background: rgba(13, 17, 23, 0.85);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 7px 13px;
+  font-size: 12.5px;
+  color: var(--text);
+  backdrop-filter: blur(4px);
+}
+
+.leaflet-tooltip {
+  background: rgba(13, 17, 23, 0.9);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  font-size: 12px;
+}
+.leaflet-tooltip-top::before { border-top-color: var(--border); }
 
 /* Proactive alerts */
 .alert-stack {
@@ -362,8 +408,15 @@ body {
   50% { box-shadow: 0 0 0 7px rgba(247, 95, 95, 0); }
 }
 
+@media (max-width: 1100px) {
+  .layout { grid-template-columns: 300px 1fr; }
+  .map-panel { grid-column: 2; }
+  .chat-panel { grid-column: 1 / -1; min-height: 480px; }
+}
+
 @media (max-width: 900px) {
   .layout { grid-template-columns: 1fr; }
   .app { height: auto; }
-  .chat-panel { min-height: 480px; }
+  .map-panel { grid-column: auto; min-height: 300px; }
+  .chat-panel { grid-column: auto; min-height: 480px; }
 }

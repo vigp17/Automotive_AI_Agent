@@ -23,6 +23,7 @@ export interface VehicleState {
     eta_min: number | null;
     progress: number | null;
     active: boolean;
+    route: [number, number][];
   } | null;
   alerts: CabinAlert[];
 }

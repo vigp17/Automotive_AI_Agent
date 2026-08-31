@@ -19,13 +19,16 @@ Open http://localhost:5173 and walk through:
 3. **Battery (EV agent)** - "Do I have enough battery for the airport?" gives an SOC
    analysis with a charging-stop recommendation when needed.
 4. **Navigation agent** - "Navigate to the airport" returns distance/ETA/traffic and the
-   vehicle starts driving: speed rises, SOC drains, trip progress fills.
+   vehicle starts driving: speed rises, SOC drains, trip progress fills. The center
+   **map** draws the route, drops a destination marker, and follows the vehicle as it
+   moves (hover the green marker for live speed).
 5. **Calendar agent** - "What's on my calendar?" lists the seeded meetings.
 6. **Cross-agent trip planning** - "Get me to my next meeting" chains calendar ->
    route -> energy check -> arrival verdict, and starts navigation. To force a charging
    stop first ask a few questions with battery drained low (or edit `soc` in
    `backend/simulator/vehicle.py`).
-7. **Voice** - click the mic button, speak, click again to stop. Chrome/Edge/Safari
+7. **Voice** - **hold the mic button, speak, release** (or tap once to toggle on,
+   tap again to stop). Chrome/Edge/Safari
    use the browser's built-in speech recognition; other browsers upload the audio and a
    local Whisper model transcribes it on the backend (first use downloads the model,
    ~145 MB, so allow ~30 s once). Replies are spoken aloud either way. No Azure keys
