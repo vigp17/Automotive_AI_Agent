@@ -22,7 +22,9 @@ Open http://localhost:5173 and walk through:
    vehicle starts driving: speed rises, SOC drains, trip progress fills. The center
    **map** draws the route, drops a destination marker, and follows the vehicle as it
    moves (hover the green marker for live speed). While **parked**, type in the
-   **search box** (try "redmond" or "tacoma") and pick a result. Keyboard search
+   **search box** (try "redmond", "tacoma", or "Detroit") and pick a result.
+   Distances come from OpenStreetMap road routing (Nominatim + OSRM), so
+   Seattle → Detroit is a multi-day drive, not a 26-minute fake pin. Keyboard search
    locks once the vehicle is moving — same as a production HMI — so use voice or
    a favorite to change destination. **Cancel trip** on the map overlay (or say
    "cancel the trip") stops navigation and parks. You can also **tap anywhere

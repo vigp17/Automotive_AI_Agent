@@ -156,6 +156,115 @@ class MockMapsClient:
         }
 
 
+class OsmMapsClient:
+    """Nominatim geocoding + OSRM road routing. No API key. Used when Azure
+    Maps isn't configured so any city or address gets a real driving distance
+    instead of a fake pin near Seattle."""
+
+    NOMINATIM = "https://nominatim.openstreetmap.org"
+    OSRM = "https://router.project-osrm.org"
+    USER_AGENT = "AI-Cabin-Copilot/0.1 (https://github.com/vigp17/Automotive_AI_Agent)"
+
+    def __init__(
+        self,
+        nominatim: str | None = None,
+        osrm: str | None = None,
+        transport: httpx.BaseTransport | None = None,
+    ) -> None:
+        self.nominatim = nominatim or self.NOMINATIM
+        self.osrm = osrm or self.OSRM
+        self.transport = transport
+
+    def _headers(self) -> dict[str, str]:
+        return {"User-Agent": self.USER_AGENT, "Accept": "application/json"}
+
+    async def geocode(self, query: str) -> tuple[float, float]:
+        known = lookup_place(query)
+        if known:
+            return known
+        hits = await self.search(query, limit=1)
+        if hits:
+            return (hits[0]["lat"], hits[0]["lon"])
+        raise ValueError(f"Could not geocode {query!r}")
+
+    async def search(self, query: str, limit: int = 5) -> list[dict]:
+        local = search_known_places(query, limit=limit)
+        remaining = max(0, limit - len(local))
+        if remaining == 0:
+            return local
+        try:
+            async with httpx.AsyncClient(
+                timeout=12, headers=self._headers(), transport=self.transport
+            ) as client:
+                resp = await client.get(
+                    f"{self.nominatim}/search",
+                    params={
+                        "q": query,
+                        "format": "json",
+                        "limit": remaining,
+                        "addressdetails": 0,
+                    },
+                )
+                resp.raise_for_status()
+                remote = []
+                seen = {(round(p["lat"], 4), round(p["lon"], 4)) for p in local}
+                for item in resp.json():
+                    lat = float(item["lat"])
+                    lon = float(item["lon"])
+                    key = (round(lat, 4), round(lon, 4))
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    remote.append(
+                        {
+                            "label": item.get("display_name") or query,
+                            "lat": lat,
+                            "lon": lon,
+                        }
+                    )
+                return local + remote
+        except (httpx.HTTPError, ValueError, KeyError):
+            return local
+
+    async def route(self, origin: tuple[float, float], destination: str) -> dict:
+        dest = await self.geocode(destination)
+        return await self.route_to_coords(origin, dest, destination)
+
+    async def route_to_coords(
+        self, origin: tuple[float, float], dest: tuple[float, float], label: str
+    ) -> dict:
+        """Actual driving distance/ETA from OSRM; straight-line fallback."""
+        try:
+            async with httpx.AsyncClient(
+                timeout=20, headers=self._headers(), transport=self.transport
+            ) as client:
+                coord = f"{origin[1]},{origin[0]};{dest[1]},{dest[0]}"
+                resp = await client.get(
+                    f"{self.osrm}/route/v1/driving/{coord}",
+                    params={"overview": "simplified", "geometries": "geojson"},
+                )
+                resp.raise_for_status()
+                route = resp.json()["routes"][0]
+                coords = route.get("geometry", {}).get("coordinates") or []
+                points = [(lat, lon) for lon, lat in coords]  # geojson is lon,lat
+                if len(points) > 20:
+                    step = max(1, len(points) // 20)
+                    points = points[::step]
+                if not points:
+                    points = _interpolate(origin, dest, n=_waypoint_count(route["distance"] / 1000))
+                return {
+                    "destination": label,
+                    "dest_lat": dest[0],
+                    "dest_lon": dest[1],
+                    "distance_km": round(route["distance"] / 1000, 1),
+                    "duration_min": round(route["duration"] / 60, 1),
+                    "traffic_delay_min": 0.0,
+                    "points": points,
+                }
+        except (httpx.HTTPError, KeyError, IndexError, TypeError):
+            return await MockMapsClient().route_to_coords(origin, dest, label)
+
+
 class AzureMapsClient:
     """Thin wrapper over Azure Maps Search + Route Directions REST APIs."""
 
@@ -232,15 +341,23 @@ class AzureMapsClient:
         }
 
 
-_client: MockMapsClient | AzureMapsClient | None = None
+_client: MockMapsClient | OsmMapsClient | AzureMapsClient | None = None
+
+
+def reset_maps_client() -> None:
+    global _client
+    _client = None
 
 
 def get_maps_client():
     global _client
     if _client is None:
         settings = get_settings()
-        if settings.mock_mode or not settings.azure_maps_key:
+        backend = settings.maps_backend.lower().strip()
+        if backend == "azure" and settings.azure_maps_key:
+            _client = AzureMapsClient(settings.azure_maps_key)
+        elif backend == "mock":
             _client = MockMapsClient()
         else:
-            _client = AzureMapsClient(settings.azure_maps_key)
+            _client = OsmMapsClient()
     return _client

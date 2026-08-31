@@ -26,6 +26,10 @@ class Settings(BaseSettings):
 
     azure_maps_key: str = ""
 
+    # mock = deterministic offline table (tests). osm = Nominatim + OSRM
+    # (real distances, no Azure key). azure = Azure Maps.
+    maps_backend: str = "osm"
+
     # Local Whisper STT used when Azure Speech is not configured. Disable to
     # fall back to the deterministic mock transcriber (used in tests).
     local_stt: bool = True
