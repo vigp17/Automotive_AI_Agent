@@ -190,6 +190,10 @@ class VehicleSimulator:
                     else None
                 ),
                 "active": self.driving,
+                # Waypoints for the dashboard map (routes are <= ~20 points)
+                "route": [
+                    [round(lat, 5), round(lon, 5)] for lat, lon in self.trip.route
+                ],
             }
         return {
             "soc_percent": self.get_soc(),
