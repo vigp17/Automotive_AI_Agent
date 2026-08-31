@@ -29,6 +29,29 @@ KNOWN_PLACES = {
 }
 
 
+def _place_label(name: str) -> str:
+    return " ".join(part.capitalize() for part in name.replace("-", " ").split())
+
+
+def search_known_places(query: str, limit: int = 5) -> list[dict]:
+    """Match the mock geocoder table, de-duplicated by coordinates."""
+    key = query.strip().lower()
+    if not key:
+        return []
+    seen: set[tuple[float, float]] = set()
+    results: list[dict] = []
+    for name, coords in KNOWN_PLACES.items():
+        if key not in name and name not in key:
+            continue
+        if coords in seen:
+            continue
+        seen.add(coords)
+        results.append({"label": _place_label(name), "lat": coords[0], "lon": coords[1]})
+        if len(results) >= limit:
+            break
+    return results
+
+
 def _interpolate(origin: tuple[float, float], dest: tuple[float, float], n: int = 8):
     return [
         (
@@ -55,6 +78,14 @@ class MockMapsClient:
         dlat = dist_km / 111.0 * math.cos(angle)
         dlon = dist_km / 78.0 * math.sin(angle)
         return (47.6062 + dlat, -122.3321 + dlon)
+
+    async def search(self, query: str, limit: int = 5) -> list[dict]:
+        """Typeahead suggestions for the HMI search box (parked only)."""
+        hits = search_known_places(query, limit=limit)
+        if hits:
+            return hits
+        lat, lon = await self.geocode(query)
+        return [{"label": query.strip(), "lat": lat, "lon": lon}]
 
     async def route(self, origin: tuple[float, float], destination: str) -> dict:
         dest = await self.geocode(destination)
@@ -96,6 +127,29 @@ class AzureMapsClient:
             resp.raise_for_status()
             pos = resp.json()["results"][0]["position"]
             return (pos["lat"], pos["lon"])
+
+    async def search(self, query: str, limit: int = 5) -> list[dict]:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(
+                f"{self.BASE}/search/fuzzy/json",
+                params={
+                    "api-version": "1.0",
+                    "subscription-key": self.key,
+                    "query": query,
+                    "limit": limit,
+                },
+            )
+            resp.raise_for_status()
+            results = []
+            for item in resp.json().get("results", [])[:limit]:
+                pos = item.get("position") or {}
+                if "lat" not in pos or "lon" not in pos:
+                    continue
+                poi = item.get("poi") or {}
+                address = item.get("address") or {}
+                label = poi.get("name") or address.get("freeformAddress") or query
+                results.append({"label": label, "lat": pos["lat"], "lon": pos["lon"]})
+            return results
 
     async def route(self, origin: tuple[float, float], destination: str) -> dict:
         dest = await self.geocode(destination)

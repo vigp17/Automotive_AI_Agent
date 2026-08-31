@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import {
   CircleMarker,
   MapContainer,
@@ -9,9 +9,8 @@ import {
   useMap,
   useMapEvents,
 } from "react-leaflet";
-import { useEffect } from "react";
 import "leaflet/dist/leaflet.css";
-import { navigateTo, VehicleState } from "../api";
+import { navigateTo, PlaceSuggestion, searchPlaces, VehicleState } from "../api";
 
 // OpenStreetMap tiles (keyless); a CSS invert filter (.dark-tiles) restyles
 // them to match the dark cockpit theme. CARTO basemaps now watermark
@@ -63,6 +62,44 @@ export default function MapPanel({
 }) {
   const [pin, setPin] = useState<{ lat: number; lon: number } | null>(null);
   const [navBusy, setNavBusy] = useState(false);
+  const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [searching, setSearching] = useState(false);
+  const parked = Boolean(state && !state.driving);
+
+  useEffect(() => {
+    if (!parked) {
+      setQuery("");
+      setSuggestions([]);
+      setSearching(false);
+    }
+  }, [parked]);
+
+  useEffect(() => {
+    if (!parked) return;
+    const q = query.trim();
+    if (q.length < 2) {
+      setSuggestions([]);
+      setSearching(false);
+      return;
+    }
+    let cancelled = false;
+    setSearching(true);
+    const timer = window.setTimeout(async () => {
+      try {
+        const results = await searchPlaces(q);
+        if (!cancelled) setSuggestions(results);
+      } catch {
+        if (!cancelled) setSuggestions([]);
+      } finally {
+        if (!cancelled) setSearching(false);
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [query, parked]);
 
   if (!state) {
     return <div className="map-panel loading">Loading map...</div>;
@@ -73,16 +110,26 @@ export default function MapPanel({
   const fullPath: [number, number][] = route.length ? [[lat, lon], ...route] : [];
   const destination = route.length ? route[route.length - 1] : null;
 
-  const driveToPin = async () => {
-    if (!pin || navBusy) return;
+  const driveTo = async (destLat: number, destLon: number, label: string) => {
+    if (navBusy) return;
     setNavBusy(true);
     try {
-      await navigateTo(pin.lat, pin.lon, "Dropped pin");
+      await navigateTo(destLat, destLon, label);
       setPin(null);
+      setQuery("");
+      setSuggestions([]);
     } catch {
-      // keep the popup open so the user can retry
+      // keep the picker open so the user can retry
     } finally {
       setNavBusy(false);
+    }
+  };
+
+  const onSearchSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    if (!parked) return;
+    if (suggestions[0]) {
+      void driveTo(suggestions[0].lat, suggestions[0].lon, suggestions[0].label);
     }
   };
 
@@ -129,7 +176,11 @@ export default function MapPanel({
               <div className="pin-coords">
                 {pin.lat.toFixed(4)}, {pin.lon.toFixed(4)}
               </div>
-              <button className="pin-go" onClick={() => void driveToPin()} disabled={navBusy}>
+              <button
+                className="pin-go"
+                onClick={() => void driveTo(pin.lat, pin.lon, "Dropped pin")}
+                disabled={navBusy}
+              >
                 {navBusy ? "Routing..." : "Drive here"}
               </button>
             </div>
@@ -138,6 +189,39 @@ export default function MapPanel({
         <FollowVehicle lat={lat} lon={lon} driving={state.driving} />
         <FitRoute routeKey={state.trip?.destination ?? ""} route={route} />
       </MapContainer>
+      <div className="map-search">
+        <form className={`search-box ${parked ? "" : "locked"}`} onSubmit={onSearchSubmit}>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={parked ? "Search destination..." : "Available in Park"}
+            disabled={!parked}
+            aria-label="Search destination"
+          />
+          <button type="submit" disabled={!parked || !suggestions[0] || navBusy}>
+            Go
+          </button>
+        </form>
+        {!parked && (
+          <div className="search-lock">Keyboard search locked while driving — use voice or a favorite</div>
+        )}
+        {parked && (suggestions.length > 0 || searching) && (
+          <ul className="search-results">
+            {searching && suggestions.length === 0 && <li className="search-empty">Searching...</li>}
+            {suggestions.map((place) => (
+              <li key={`${place.label}-${place.lat}-${place.lon}`}>
+                <button
+                  type="button"
+                  onClick={() => void driveTo(place.lat, place.lon, place.label)}
+                  disabled={navBusy}
+                >
+                  {place.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
       <div className="map-favorites">
         {FAVORITES.map((name) => (
           <button
@@ -154,7 +238,9 @@ export default function MapPanel({
           ? `En route to ${state.trip.destination}`
           : state.trip
             ? `Arrived - ${state.trip.destination}`
-            : "No active trip - tap the map to drive somewhere"}
+            : parked
+              ? "Parked — search, tap the map, or pick a favorite"
+              : "No active trip"}
       </div>
     </div>
   );
