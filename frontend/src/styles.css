@@ -112,6 +112,12 @@ body {
   backdrop-filter: blur(4px);
 }
 
+/* Restyle standard OSM tiles to a dark theme (keyless alternative to
+   commercial dark basemaps). */
+.dark-tiles {
+  filter: invert(1) hue-rotate(180deg) brightness(0.75) contrast(1.1) saturate(0.6);
+}
+
 .leaflet-tooltip {
   background: rgba(13, 17, 23, 0.9);
   border: 1px solid var(--border);
