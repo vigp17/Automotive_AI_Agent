@@ -3,10 +3,12 @@ import { CircleMarker, MapContainer, Polyline, TileLayer, Tooltip, useMap } from
 import "leaflet/dist/leaflet.css";
 import { VehicleState } from "../api";
 
-// Free dark basemap (no API key), matches the cockpit theme.
-const TILE_URL = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+// OpenStreetMap tiles (keyless); a CSS invert filter (.dark-tiles) restyles
+// them to match the dark cockpit theme. CARTO basemaps now watermark
+// "API KEY REQUIRED" on keyless requests, so we avoid them.
+const TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const TILE_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 /** Keeps the vehicle in view as it moves without fighting the user's zoom. */
 function FollowVehicle({ lat, lon, driving }: { lat: number; lon: number; driving: boolean }) {
@@ -50,7 +52,7 @@ export default function MapPanel({ state }: { state: VehicleState | null }) {
         zoomControl={false}
         attributionControl={false}
       >
-        <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
+        <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} className="dark-tiles" />
         {fullPath.length > 1 && (
           <Polyline
             positions={fullPath}
