@@ -8,9 +8,16 @@ from pathlib import Path
 os.environ["MOCK_MODE"] = "true"
 os.environ["LOCAL_STT"] = "false"
 os.environ["VEHICLE_BUS"] = "sim"
+os.environ["MAPS_BACKEND"] = "mock"
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BACKEND_DIR))
+
+from app.config import get_settings
+from services.maps import reset_maps_client
+
+get_settings.cache_clear()
+reset_maps_client()
 
 import pytest
 
