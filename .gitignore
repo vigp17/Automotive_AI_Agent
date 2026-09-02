@@ -14,3 +14,4 @@ backend/data/memory.sqlite*
 *.sqlite-wal
 *.sqlite-shm
 *.tsbuildinfo
+backend/data/msal_token.json

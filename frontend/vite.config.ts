@@ -14,6 +14,7 @@ export default defineConfig({
       "/navigate": backend,
       "/places": backend,
       "/preferences": backend,
+      "/calendar": backend,
       "/vehicle": { target: backend, ws: true },
     },
   },

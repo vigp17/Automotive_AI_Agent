@@ -137,6 +137,38 @@ export async function savePreferences(
   return resp.json();
 }
 
+export interface CalendarStatus {
+  backend: string;
+  configured: boolean;
+  connected: boolean;
+  pending: { user_code: string; verification_uri: string; message: string } | null;
+  error: string | null;
+}
+
+export async function fetchCalendarStatus(): Promise<CalendarStatus> {
+  const resp = await fetch("/calendar/status");
+  if (!resp.ok) throw new Error(`calendar status failed: ${resp.status}`);
+  return resp.json();
+}
+
+export async function connectOutlook(): Promise<{
+  user_code: string;
+  verification_uri: string;
+  message: string;
+  expires_in: number;
+}> {
+  const resp = await fetch("/calendar/connect", { method: "POST" });
+  if (!resp.ok) {
+    const body = await resp.json().catch(() => ({}));
+    throw new Error(body.detail || `connect failed: ${resp.status}`);
+  }
+  return resp.json();
+}
+
+export async function logoutOutlook(): Promise<void> {
+  await fetch("/calendar/logout", { method: "POST" });
+}
+
 export async function setTemperature(celsius: number): Promise<void> {
   await fetch("/vehicle/temperature", {
     method: "POST",

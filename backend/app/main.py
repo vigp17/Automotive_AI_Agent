@@ -134,6 +134,7 @@ def root():
     <li><a href="/vehicle/can">/vehicle/can</a> — recent CAN frames</li>
     <li><a href="/alerts">/alerts</a> — proactive alerts</li>
     <li><a href="/preferences">/preferences</a> — driver home, work, default temp</li>
+    <li><a href="/calendar/status">/calendar/status</a> — JSON or Outlook Graph</li>
     <li><a href="/healthz">/healthz</a> — health check</li>
   </ul>
   <p>Do not open <code>/vehicle/ws</code> in the browser — that is a WebSocket and will look blank.</p>
@@ -249,6 +250,48 @@ def put_prefs(req: PreferencesUpdate):
     if req.default_temp_c is not None:
         get_simulator().set_temperature(prefs.default_temp_c)
     return prefs.to_dict()
+
+
+@app.get("/calendar/status")
+def calendar_status():
+    from app.config import get_settings
+    from services.graph_auth import (
+        graph_configured,
+        graph_connected,
+        last_login_error,
+        login_pending,
+    )
+
+    settings = get_settings()
+    backend = settings.calendar_backend.lower().strip()
+    pending = login_pending()
+    return {
+        "backend": backend,
+        "configured": graph_configured(),
+        "connected": graph_connected() if backend == "graph" else False,
+        "pending": pending,
+        "error": last_login_error(),
+    }
+
+
+@app.post("/calendar/connect")
+def calendar_connect():
+    from services.graph_auth import start_device_login
+
+    try:
+        return start_device_login()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/calendar/logout")
+def calendar_logout():
+    from services.calendar_store import reset_calendar_store
+    from services.graph_auth import logout_graph
+
+    logout_graph()
+    reset_calendar_store()
+    return {"connected": False}
 
 
 @app.get("/vehicle/can")

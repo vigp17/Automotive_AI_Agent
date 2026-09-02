@@ -354,6 +354,8 @@ def get_maps_client():
     if _client is None:
         settings = get_settings()
         backend = settings.maps_backend.lower().strip()
+        if backend == "auto":
+            backend = "azure" if settings.azure_maps_key else "osm"
         if backend == "azure" and settings.azure_maps_key:
             _client = AzureMapsClient(settings.azure_maps_key)
         elif backend == "mock":

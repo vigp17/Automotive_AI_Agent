@@ -9,6 +9,7 @@ os.environ["MOCK_MODE"] = "true"
 os.environ["LOCAL_STT"] = "false"
 os.environ["VEHICLE_BUS"] = "sim"
 os.environ["MAPS_BACKEND"] = "mock"
+os.environ["CALENDAR_BACKEND"] = "json"
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BACKEND_DIR))
@@ -19,6 +20,9 @@ from services.preferences import reset_preferences
 
 get_settings.cache_clear()
 reset_maps_client()
+from services.calendar_store import reset_calendar_store
+
+reset_calendar_store()
 
 import pytest
 
