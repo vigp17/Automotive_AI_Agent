@@ -7,6 +7,7 @@ import json
 from langchain_core.tools import tool
 
 from simulator.bus import get_bus
+from services.preferences import get_preferences, update_preferences
 
 
 @tool
@@ -50,3 +51,19 @@ def set_temperature(celsius: float) -> str:
     """Set the cabin HVAC target temperature in Celsius (16-30)."""
     applied = get_bus().write_signal("hvac.target_temp_c", celsius)
     return json.dumps({"target_temp_c": applied, "status": "ok"})
+
+
+@tool
+def apply_preferred_temperature() -> str:
+    """Set the cabin to the driver's saved default temperature."""
+    prefs = get_preferences()
+    applied = get_bus().write_signal("hvac.target_temp_c", prefs.default_temp_c)
+    return json.dumps({"target_temp_c": applied, "preferred": True})
+
+
+@tool
+def set_preferred_temperature(celsius: float) -> str:
+    """Save and apply the driver's default cabin temperature (16-30 C)."""
+    prefs = update_preferences(default_temp_c=celsius)
+    applied = get_bus().write_signal("hvac.target_temp_c", prefs.default_temp_c)
+    return json.dumps({"target_temp_c": applied, "saved": True})

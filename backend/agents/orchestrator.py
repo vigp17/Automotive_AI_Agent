@@ -50,7 +50,9 @@ def classify_by_keywords(text: str) -> str:
         any(w in t for w in _MOVEMENT_WORDS) or "on time" in t or "route" in t
     ):
         return "trip_planning"
-    if any(w in t for w in ("temp", "degrees", "climate", "cold", "hot", "warmer", "cooler", "ac ", "heat")):
+    if any(w in t for w in ("set home", "set work", "home is", "work is")):
+        return "navigation"
+    if any(w in t for w in ("temp", "degrees", "climate", "cold", "hot", "warmer", "cooler", "ac ", "heat", "usual")):
         return "hvac"
     if any(w in t for w in ("battery", "soc", "charging", "charger", "charge", "range")):
         return "ev"

@@ -1,0 +1,6 @@
+{
+  "driver_name": "Alex",
+  "default_temp_c": 21.0,
+  "home": { "label": "Home", "query": "home" },
+  "work": { "label": "Work", "query": "office" }
+}

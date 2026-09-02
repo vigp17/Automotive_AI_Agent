@@ -13,6 +13,7 @@ export default defineConfig({
       "/report": backend,
       "/navigate": backend,
       "/places": backend,
+      "/preferences": backend,
       "/vehicle": { target: backend, ws: true },
     },
   },

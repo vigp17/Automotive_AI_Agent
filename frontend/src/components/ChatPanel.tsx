@@ -9,11 +9,10 @@ interface Message {
 }
 
 const SUGGESTIONS = [
+  "Take me home",
   "Get me to my next meeting",
-  "Do I have enough battery for the airport?",
-  "Set temperature to 22",
+  "Set my usual temperature",
   "What's on my calendar?",
-  "Cancel the trip",
 ];
 
 export default function ChatPanel({

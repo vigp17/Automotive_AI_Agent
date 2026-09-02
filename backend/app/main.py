@@ -62,6 +62,9 @@ async def lifespan(app: FastAPI):
     from simulator.can_bridge import start_bridge, stop_bridge
 
     app.state.orchestrator = Orchestrator()
+    from services.preferences import get_preferences
+
+    get_simulator().set_temperature(get_preferences().default_temp_c)
     if can_mode():
         start_bridge()
         publish_vehicle_frames()
@@ -99,6 +102,15 @@ class NavigateRequest(BaseModel):
     label: str = "Dropped pin"
 
 
+class PreferencesUpdate(BaseModel):
+    driver_name: str | None = None
+    default_temp_c: float | None = Field(default=None, ge=16, le=30)
+    home_query: str | None = None
+    home_label: str | None = None
+    work_query: str | None = None
+    work_label: str | None = None
+
+
 @app.get("/", response_class=HTMLResponse)
 def root():
     return """<!doctype html>
@@ -121,6 +133,7 @@ def root():
     <li><a href="/vehicle/state">/vehicle/state</a> — live vehicle JSON</li>
     <li><a href="/vehicle/can">/vehicle/can</a> — recent CAN frames</li>
     <li><a href="/alerts">/alerts</a> — proactive alerts</li>
+    <li><a href="/preferences">/preferences</a> — driver home, work, default temp</li>
     <li><a href="/healthz">/healthz</a> — health check</li>
   </ul>
   <p>Do not open <code>/vehicle/ws</code> in the browser — that is a WebSocket and will look blank.</p>
@@ -212,6 +225,30 @@ def cancel_navigation_endpoint():
     if not result["cancelled"]:
         return {"cancelled": False, "destination": None}
     return result
+
+
+@app.get("/preferences")
+def get_prefs(request: Request):
+    from services.preferences import get_preferences
+
+    return _as_page(request, "preferences", get_preferences().to_dict())
+
+
+@app.put("/preferences")
+def put_prefs(req: PreferencesUpdate):
+    from services.preferences import update_preferences
+
+    prefs = update_preferences(
+        driver_name=req.driver_name,
+        default_temp_c=req.default_temp_c,
+        home_query=req.home_query,
+        home_label=req.home_label,
+        work_query=req.work_query,
+        work_label=req.work_label,
+    )
+    if req.default_temp_c is not None:
+        get_simulator().set_temperature(prefs.default_temp_c)
+    return prefs.to_dict()
 
 
 @app.get("/vehicle/can")

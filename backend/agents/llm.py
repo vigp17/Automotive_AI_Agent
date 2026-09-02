@@ -37,6 +37,12 @@ def _match_tool(text: str, available: set[str]):
     num = _NUM_RE.search(text)
 
     if "set_temperature" in available:
+        if "usual" in text or "preferred" in text or "my temperature" in text or "default temp" in text:
+            if "save" in text or "remember" in text or "set my default" in text:
+                if "set_preferred_temperature" in available and num:
+                    return "set_preferred_temperature", {"celsius": float(num.group(1))}
+            if "apply_preferred_temperature" in available:
+                return "apply_preferred_temperature", {}
         if ("temp" in text or "degrees" in text or "climate" in text) and num and (
             "set" in text or "to " in text or "make" in text
         ):
@@ -65,6 +71,15 @@ def _match_tool(text: str, available: set[str]):
     ):
         return "get_soc", {}
 
+    if "set_saved_place" in available and (
+        "set home" in text or "home is" in text or "set work" in text or "work is" in text
+    ):
+        slot = "work" if "work" in text or "office" in text else "home"
+        dest = _DEST_RE.search(text)
+        query = dest.group(1).strip() if dest else ""
+        if query:
+            return "set_saved_place", {"slot": slot, "query": query}
+
     if "cancel_navigation" in available and (
         "cancel" in text
         or "abort" in text
@@ -85,7 +100,13 @@ def _match_tool(text: str, available: set[str]):
         or "traffic" in text
         or "how long" in text
     ):
-        return "get_route", {"destination": _extract_destination(text)}
+        if "home" in text:
+            dest = "home"
+        elif "work" in text or ("office" in text and "navigate" in text):
+            dest = "work"
+        else:
+            dest = _extract_destination(text)
+        return "get_route", {"destination": dest}
 
     if "list_meetings" in available and (
         ("meetings" in text and ("list" in text or "all" in text or "what" in text))
@@ -129,6 +150,14 @@ def summarize_tool_result(tool_name: str, payload: str) -> str:
         )
     if tool_name == "set_temperature":
         return f"Done - cabin temperature set to {data.get('target_temp_c')}°C."
+    if tool_name == "apply_preferred_temperature":
+        return f"Setting cabin to your usual {data.get('target_temp_c')}°C."
+    if tool_name == "set_preferred_temperature":
+        return f"Saved your default cabin temperature as {data.get('target_temp_c')}°C."
+    if tool_name == "set_saved_place":
+        if data.get("error"):
+            return f"I couldn't save that: {data['error']}."
+        return f"Saved your {data.get('slot')} as {data.get('query')}."
     if tool_name == "get_route":
         return (
             f"Routing to {data.get('destination')}: {data.get('distance_km')} km, "
