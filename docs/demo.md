@@ -28,7 +28,9 @@ Open http://localhost:5173 and walk through:
    locks once the vehicle is moving — same as a production HMI — so use voice or
    a favorite to change destination. **Cancel trip** on the map overlay (or say
    "cancel the trip") stops navigation and parks. You can also **tap anywhere
-   on the map** and confirm "Drive here", or hit the **Home / Office / Airport** chips.
+   on the map** and confirm "Drive here", or hit the **Home / Work / Airport** chips.
+   **Preferences** in the top bar saves Home, Work, and default cabin temp —
+   used by “take me home” and “set my usual temperature”.
 5. **Calendar agent** - "What's on my calendar?" lists the seeded meetings.
 6. **Cross-agent trip planning** - "Get me to my next meeting" chains calendar ->
    route -> energy check -> arrival verdict, and starts navigation. To force a charging

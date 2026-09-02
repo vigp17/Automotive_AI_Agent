@@ -13,8 +13,9 @@ os.environ["MAPS_BACKEND"] = "mock"
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BACKEND_DIR))
 
-from app.config import get_settings
+from app.config import DATA_DIR, get_settings
 from services.maps import reset_maps_client
+from services.preferences import reset_preferences
 
 get_settings.cache_clear()
 reset_maps_client()
@@ -22,6 +23,15 @@ reset_maps_client()
 import pytest
 
 from simulator import vehicle
+
+
+@pytest.fixture(autouse=True)
+def isolated_prefs(tmp_path):
+    dest = tmp_path / "preferences.json"
+    dest.write_text((DATA_DIR / "preferences.json").read_text())
+    reset_preferences(dest)
+    yield dest
+    reset_preferences()
 
 
 @pytest.fixture(autouse=True)

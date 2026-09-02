@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { openStateSocket, VehicleState } from "./api";
+import { DriverPreferences, fetchPreferences, openStateSocket, VehicleState } from "./api";
 import AlertBanner from "./components/AlertBanner";
 import ChatPanel from "./components/ChatPanel";
 import MapPanel from "./components/MapPanel";
+import PreferencesPanel from "./components/PreferencesPanel";
 import VehicleWidgets from "./components/VehicleWidgets";
 
 const SESSION_ID = `cabin-${Math.random().toString(36).slice(2, 10)}`;
@@ -10,7 +11,12 @@ const SESSION_ID = `cabin-${Math.random().toString(36).slice(2, 10)}`;
 export default function App() {
   const [state, setState] = useState<VehicleState | null>(null);
   const [queuedPrompt, setQueuedPrompt] = useState<string | null>(null);
+  const [prefs, setPrefs] = useState<DriverPreferences | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    void fetchPreferences().then(setPrefs).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     let closed = false;
@@ -35,6 +41,7 @@ export default function App() {
       <header className="topbar">
         <div className="logo">AI Cabin Copilot</div>
         <div className="status">
+          <PreferencesPanel prefs={prefs} onSaved={setPrefs} />
           <span className={`dot ${state ? "online" : "offline"}`} />
           {state ? "vehicle online" : "connecting"}
         </div>
@@ -44,7 +51,7 @@ export default function App() {
       )}
       <main className="layout">
         <VehicleWidgets state={state} />
-        <MapPanel state={state} onPrompt={setQueuedPrompt} />
+        <MapPanel state={state} prefs={prefs} onPrompt={setQueuedPrompt} />
         <ChatPanel
           sessionId={SESSION_ID}
           queuedPrompt={queuedPrompt}

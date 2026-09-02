@@ -9,7 +9,7 @@ import {
   useMapEvents,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { cancelTrip, navigateTo, PlaceSuggestion, searchPlaces, VehicleState } from "../api";
+import { cancelTrip, DriverPreferences, navigateTo, PlaceSuggestion, searchPlaces, VehicleState } from "../api";
 
 // OpenStreetMap tiles (keyless); a CSS invert filter (.dark-tiles) restyles
 // them to match the dark cockpit theme. CARTO basemaps now watermark
@@ -18,8 +18,12 @@ const TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
-// Quick destinations known to the geocoder (see backend KNOWN_PLACES).
-const FAVORITES = ["Home", "Office", "Airport"];
+// Quick destinations. Home/Work come from saved driver preferences.
+const FALLBACK_FAVORITES = [
+  { label: "Home", prompt: "Take me home" },
+  { label: "Work", prompt: "Take me to work" },
+  { label: "Airport", prompt: "Navigate to the airport" },
+];
 
 /** Fit the new route once. Do not re-run while the user is panning. */
 function FitRoute({ routeKey, route }: { routeKey: string; route: [number, number][] }) {
@@ -63,9 +67,11 @@ function CaptureMap({ mapRef }: { mapRef: MutableRefObject<ReturnType<typeof use
 
 export default function MapPanel({
   state,
+  prefs,
   onPrompt,
 }: {
   state: VehicleState | null;
+  prefs?: DriverPreferences | null;
   onPrompt?: (prompt: string) => void;
 }) {
   const [pin, setPin] = useState<{ lat: number; lon: number } | null>(null);
@@ -136,6 +142,14 @@ export default function MapPanel({
       setNavBusy(false);
     }
   };
+
+  const favorites = prefs
+    ? [
+        { label: prefs.home.label, prompt: "Take me home" },
+        { label: prefs.work.label, prompt: "Take me to work" },
+        { label: "Airport", prompt: "Navigate to the airport" },
+      ]
+    : FALLBACK_FAVORITES;
 
   const onSearchSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -240,13 +254,13 @@ export default function MapPanel({
         )}
       </div>
       <div className="map-favorites">
-        {FAVORITES.map((name) => (
+        {favorites.map((fav) => (
           <button
-            key={name}
+            key={fav.label}
             className="fav-chip"
-            onClick={() => onPrompt?.(`Navigate to ${name.toLowerCase()}`)}
+            onClick={() => onPrompt?.(fav.prompt)}
           >
-            {name}
+            {fav.label}
           </button>
         ))}
       </div>

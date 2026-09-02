@@ -8,13 +8,17 @@ import json
 from langchain_core.tools import tool
 
 from services.maps import get_maps_client
+from services.preferences import resolve_place
 from simulator.vehicle import get_simulator
 
 
 def _route_sync(destination: str) -> dict:
     sim = get_simulator()
     origin = (sim.lat, sim.lon)
-    return asyncio.run(get_maps_client().route(origin, destination))
+    query, label = resolve_place(destination)
+    route = asyncio.run(get_maps_client().route(origin, query))
+    route["destination"] = label
+    return route
 
 
 @tool
@@ -47,3 +51,24 @@ def cancel_navigation() -> str:
     sim = get_simulator()
     result = sim.cancel_trip()
     return json.dumps(result)
+
+
+@tool
+def set_saved_place(slot: str, query: str) -> str:
+    """Save the driver's home or work destination. slot must be 'home' or 'work'.
+    query is an address or place name used for routing (e.g. 'Ballard Seattle')."""
+    from services.preferences import update_preferences
+
+    key = slot.strip().lower()
+    place = query.strip()
+    if key not in ("home", "work"):
+        return json.dumps({"error": "slot must be home or work"})
+    if not place:
+        return json.dumps({"error": "query is required"})
+    if key == "home":
+        prefs = update_preferences(home_query=place, home_label="Home")
+        saved = prefs.home
+    else:
+        prefs = update_preferences(work_query=place, work_label="Work")
+        saved = prefs.work
+    return json.dumps({"slot": key, "label": saved.label, "query": saved.query})

@@ -100,6 +100,43 @@ export async function cancelTrip(): Promise<{ cancelled: boolean; destination: s
   return resp.json();
 }
 
+export interface SavedPlace {
+  label: string;
+  query: string;
+}
+
+export interface DriverPreferences {
+  driver_name: string;
+  default_temp_c: number;
+  home: SavedPlace;
+  work: SavedPlace;
+}
+
+export async function fetchPreferences(): Promise<DriverPreferences> {
+  const resp = await fetch("/preferences");
+  if (!resp.ok) throw new Error(`preferences failed: ${resp.status}`);
+  return resp.json();
+}
+
+export async function savePreferences(
+  update: Partial<{
+    driver_name: string;
+    default_temp_c: number;
+    home_query: string;
+    home_label: string;
+    work_query: string;
+    work_label: string;
+  }>,
+): Promise<DriverPreferences> {
+  const resp = await fetch("/preferences", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(update),
+  });
+  if (!resp.ok) throw new Error(`save preferences failed: ${resp.status}`);
+  return resp.json();
+}
+
 export async function setTemperature(celsius: number): Promise<void> {
   await fetch("/vehicle/temperature", {
     method: "POST",
