@@ -48,3 +48,7 @@ Open http://localhost:5173 and walk through:
 10. **Virtual CAN** - set `VEHICLE_BUS=can` in `.env` and restart the backend. Agent
     HVAC/battery reads now travel as CAN frames on a python-can virtual bus. Inspect
     recent frames: `curl localhost:8000/vehicle/can`. Default `VEHICLE_BUS=sim` is unchanged.
+11. **Outlook** - set `CALENDAR_BACKEND=graph` and `AZURE_AD_CLIENT_ID`, restart, then
+    **Connect Outlook** and complete device login. Leave-soon and "what's on my calendar"
+    then use real meetings. JSON seed is the fallback until you connect.
+12. **Azure Maps** - set `AZURE_MAPS_KEY` (keep `MAPS_BACKEND=auto`) for live traffic ETAs.

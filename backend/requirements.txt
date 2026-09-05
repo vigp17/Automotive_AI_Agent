@@ -10,3 +10,4 @@ langgraph-checkpoint-sqlite
 faster-whisper
 pytest
 python-can
+msal

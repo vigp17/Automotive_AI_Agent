@@ -3,6 +3,7 @@ import { DriverPreferences, fetchPreferences, openStateSocket, VehicleState } fr
 import AlertBanner from "./components/AlertBanner";
 import ChatPanel from "./components/ChatPanel";
 import MapPanel from "./components/MapPanel";
+import OutlookConnect from "./components/OutlookConnect";
 import PreferencesPanel from "./components/PreferencesPanel";
 import VehicleWidgets from "./components/VehicleWidgets";
 
@@ -41,6 +42,7 @@ export default function App() {
       <header className="topbar">
         <div className="logo">AI Cabin Copilot</div>
         <div className="status">
+          <OutlookConnect />
           <PreferencesPanel prefs={prefs} onSaved={setPrefs} />
           <span className={`dot ${state ? "online" : "offline"}`} />
           {state ? "vehicle online" : "connecting"}

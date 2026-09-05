@@ -1,7 +1,8 @@
-"""JSON-backed calendar store (blueprint v1: local seed, no Teams/Outlook).
+"""JSON-backed calendar store, with an Outlook/Graph option.
 
 Seed entries in data/calendar.json use offset_hours from process start so demo
-meetings are always in the near future.
+meetings are always in the near future. Set CALENDAR_BACKEND=graph to read the
+signed-in Outlook calendar (falls back to this seed until you connect).
 """
 
 from __future__ import annotations
@@ -69,11 +70,24 @@ class CalendarStore:
         return [m for m in self.meetings if m.start >= now]
 
 
-_store: CalendarStore | None = None
+_store: CalendarStore | GraphCalendarStore | None = None
 
 
-def get_calendar_store() -> CalendarStore:
+def reset_calendar_store() -> None:
+    global _store
+    _store = None
+
+
+def get_calendar_store():
+    """JSON seed, or Outlook via Graph when CALENDAR_BACKEND=graph."""
     global _store
     if _store is None:
-        _store = CalendarStore()
+        from app.config import get_settings
+
+        if get_settings().calendar_backend.lower().strip() == "graph":
+            from services.graph_calendar import GraphCalendarStore
+
+            _store = GraphCalendarStore()
+        else:
+            _store = CalendarStore()
     return _store

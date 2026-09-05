@@ -139,6 +139,22 @@ body {
 }
 .prefs-save:disabled { opacity: 0.6; cursor: default; }
 
+.device-code {
+  font-size: 28px;
+  letter-spacing: 4px;
+  font-weight: 700;
+  text-align: center;
+  padding: 12px;
+  background: #0f1520;
+  border-radius: 10px;
+  color: var(--accent);
+}
+
+.prefs-inline-error {
+  color: var(--bad);
+  font-size: 12px;
+}
+
 .dot {
   width: 9px;
   height: 9px;

@@ -26,9 +26,16 @@ class Settings(BaseSettings):
 
     azure_maps_key: str = ""
 
+    # json = local seed calendar. graph = Microsoft Graph / Outlook
+    # (needs AZURE_AD_CLIENT_ID + device login).
+    calendar_backend: str = "json"
+    azure_ad_tenant_id: str = "common"
+    azure_ad_client_id: str = ""
+
     # mock = deterministic offline table (tests). osm = Nominatim + OSRM
     # (real distances, no Azure key). azure = Azure Maps.
-    maps_backend: str = "osm"
+    # auto = Azure Maps when AZURE_MAPS_KEY is set, otherwise OSM.
+    maps_backend: str = "auto"
 
     # Local Whisper STT used when Azure Speech is not configured. Disable to
     # fall back to the deterministic mock transcriber (used in tests).
