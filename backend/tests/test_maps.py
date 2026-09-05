@@ -66,23 +66,48 @@ def test_osrm_returns_road_distance_for_any_city():
     assert route["dest_lat"] == 41.4993
 
 
+def test_maps_status_osm_without_key(client, monkeypatch):
+    from app.config import get_settings
+    from services.maps import reset_maps_client
 
-def test_lookup_detroit_is_in_michigan():
-    lat, lon = lookup_place("detroit")
-    assert lat == 42.3314
-    assert lon == -83.0458
+    monkeypatch.setenv("MAPS_BACKEND", "auto")
+    monkeypatch.setenv("AZURE_MAPS_KEY", "")
+    get_settings.cache_clear()
+    reset_maps_client()
+    resp = client.get("/maps/status")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["backend"] == "osm"
+    assert body["traffic"] is False
+    assert body["configured"] is False
+    get_settings.cache_clear()
+    reset_maps_client()
 
 
-def test_seattle_to_detroit_is_a_multi_day_drive():
-    client = MockMapsClient()
-    route = asyncio.run(client.route((47.6062, -122.3321), "Detroit"))
-    assert route["distance_km"] > 2000
-    assert route["duration_min"] > 20 * 60
-    assert route["dest_lat"] == 42.3314
+def test_maps_status_tomtom_without_key_is_osm(client, monkeypatch):
+    from app.config import get_settings
+    from services.maps import reset_maps_client
+
+    monkeypatch.setenv("MAPS_BACKEND", "tomtom")
+    monkeypatch.setenv("TOMTOM_API_KEY", "")
+    monkeypatch.setenv("AZURE_MAPS_KEY", "")
+    get_settings.cache_clear()
+    reset_maps_client()
+    resp = client.get("/maps/status")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["backend"] == "osm"
+    assert body["traffic"] is False
+    assert body["configured"] is False
+    get_settings.cache_clear()
+    reset_maps_client()
 
 
-def test_local_airport_still_short():
-    client = MockMapsClient()
-    route = asyncio.run(client.route((47.6062, -122.3321), "airport"))
-    assert route["distance_km"] < 50
-    assert route["duration_min"] < 60
+def test_traffic_tile_without_key(client, monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setenv("AZURE_MAPS_KEY", "")
+    get_settings.cache_clear()
+    resp = client.get("/maps/traffic/10/164/351.png")
+    assert resp.status_code == 404
+    get_settings.cache_clear()

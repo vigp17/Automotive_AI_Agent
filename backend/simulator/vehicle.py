@@ -42,6 +42,7 @@ class TripInfo:
     route_index: int = 0
     eta_min: float | None = None
     distance_km: float | None = None
+    traffic_delay_min: float | None = None
 
 
 class VehicleSimulator:
@@ -97,6 +98,7 @@ class VehicleSimulator:
         destination: str,
         eta_min: float | None = None,
         distance_km: float | None = None,
+        traffic_delay_min: float | None = None,
     ) -> None:
         with self._lock:
             self.trip = TripInfo(
@@ -107,6 +109,7 @@ class VehicleSimulator:
                 route=list(points),
                 eta_min=eta_min,
                 distance_km=distance_km,
+                traffic_delay_min=traffic_delay_min,
             )
             self.driving = True
 
@@ -194,6 +197,7 @@ class VehicleSimulator:
                 "elapsed_min": round(self.trip_elapsed_min(), 1),
                 "distance_km": self.trip.distance_km,
                 "eta_min": self.trip.eta_min,
+                "traffic_delay_min": self.trip.traffic_delay_min,
                 "progress": (
                     round(self.trip.route_index / len(self.trip.route), 2)
                     if self.trip.route

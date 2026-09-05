@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   CalendarStatus,
+  addDemoMeeting,
   connectOutlook,
   fetchCalendarStatus,
   logoutOutlook,
@@ -25,6 +26,19 @@ export default function OutlookConnect() {
 
   if (!status || status.backend !== "graph") return null;
 
+  const addSample = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await addDemoMeeting();
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not add sample meeting");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const start = async () => {
     setBusy(true);
     setError(null);
@@ -41,13 +55,25 @@ export default function OutlookConnect() {
   return (
     <>
       {status.connected ? (
-        <button
-          type="button"
-          className="prefs-btn"
-          onClick={() => void logoutOutlook().then(() => refresh())}
-        >
-          Outlook connected
-        </button>
+        <>
+          <button
+            type="button"
+            className="prefs-btn"
+            onClick={() => void logoutOutlook().then(() => refresh())}
+          >
+            Outlook connected
+          </button>
+          {status.meeting_count === 0 && (
+            <button
+              type="button"
+              className="prefs-btn"
+              onClick={() => void addSample()}
+              disabled={busy}
+            >
+              {busy ? "Adding..." : "Add sample meeting"}
+            </button>
+          )}
+        </>
       ) : (
         <button type="button" className="prefs-btn" onClick={() => void start()} disabled={busy || !status.configured}>
           {busy ? "Starting..." : "Connect Outlook"}

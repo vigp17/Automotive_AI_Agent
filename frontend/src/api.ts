@@ -21,6 +21,7 @@ export interface VehicleState {
     elapsed_min: number;
     distance_km: number | null;
     eta_min: number | null;
+    traffic_delay_min: number | null;
     progress: number | null;
     active: boolean;
     route: [number, number][];
@@ -137,12 +138,22 @@ export async function savePreferences(
   return resp.json();
 }
 
+export interface CalendarMeeting {
+  title: string;
+  location: string;
+  start: string;
+  start_display: string;
+  duration_min: number;
+}
+
 export interface CalendarStatus {
   backend: string;
   configured: boolean;
   connected: boolean;
   pending: { user_code: string; verification_uri: string; message: string } | null;
   error: string | null;
+  meeting_count: number;
+  next_meeting: CalendarMeeting | null;
 }
 
 export async function fetchCalendarStatus(): Promise<CalendarStatus> {
@@ -167,6 +178,25 @@ export async function connectOutlook(): Promise<{
 
 export async function logoutOutlook(): Promise<void> {
   await fetch("/calendar/logout", { method: "POST" });
+}
+
+export interface MapsStatus {
+  backend: string;
+  configured: boolean;
+  traffic: boolean;
+}
+
+export async function fetchMapsStatus(): Promise<MapsStatus> {
+  const resp = await fetch("/maps/status");
+  if (!resp.ok) throw new Error(`maps status failed: ${resp.status}`);
+  return resp.json();
+}
+
+export async function addDemoMeeting(): Promise<CalendarMeeting> {
+  const resp = await fetch("/calendar/demo-meeting", { method: "POST" });
+  if (!resp.ok) throw new Error(`demo meeting failed: ${resp.status}`);
+  const body = await resp.json();
+  return body.meeting;
 }
 
 export async function setTemperature(celsius: number): Promise<void> {

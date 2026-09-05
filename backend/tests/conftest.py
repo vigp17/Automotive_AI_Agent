@@ -9,7 +9,10 @@ os.environ["MOCK_MODE"] = "true"
 os.environ["LOCAL_STT"] = "false"
 os.environ["VEHICLE_BUS"] = "sim"
 os.environ["MAPS_BACKEND"] = "mock"
+os.environ["AZURE_MAPS_KEY"] = ""
+os.environ["TOMTOM_API_KEY"] = ""
 os.environ["CALENDAR_BACKEND"] = "json"
+os.environ["AZURE_AD_CLIENT_ID"] = ""
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BACKEND_DIR))
@@ -21,12 +24,24 @@ from services.preferences import reset_preferences
 get_settings.cache_clear()
 reset_maps_client()
 from services.calendar_store import reset_calendar_store
+from services.demo_meetings import reset_demo_meetings
 
 reset_calendar_store()
+reset_demo_meetings()
 
 import pytest
 
 from simulator import vehicle
+
+
+@pytest.fixture(autouse=True)
+def isolated_demo_meetings(tmp_path, monkeypatch):
+    from services import demo_meetings
+
+    monkeypatch.setattr(demo_meetings, "DEMO_FILE", tmp_path / "demo_meetings.json")
+    demo_meetings.reset_demo_meetings()
+    yield
+    demo_meetings.reset_demo_meetings()
 
 
 @pytest.fixture(autouse=True)

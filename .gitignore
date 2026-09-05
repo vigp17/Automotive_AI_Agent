@@ -15,3 +15,4 @@ backend/data/memory.sqlite*
 *.sqlite-shm
 *.tsbuildinfo
 backend/data/msal_token.json
+backend/data/demo_meetings.json

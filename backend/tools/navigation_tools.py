@@ -32,6 +32,7 @@ def get_route(destination: str) -> str:
         destination=route["destination"],
         eta_min=route["duration_min"],
         distance_km=route["distance_km"],
+        traffic_delay_min=route["traffic_delay_min"],
     )
     return json.dumps(
         {

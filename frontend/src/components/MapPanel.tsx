@@ -9,7 +9,15 @@ import {
   useMapEvents,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { cancelTrip, DriverPreferences, navigateTo, PlaceSuggestion, searchPlaces, VehicleState } from "../api";
+import {
+  cancelTrip,
+  DriverPreferences,
+  fetchMapsStatus,
+  navigateTo,
+  PlaceSuggestion,
+  searchPlaces,
+  VehicleState,
+} from "../api";
 
 // OpenStreetMap tiles (keyless); a CSS invert filter (.dark-tiles) restyles
 // them to match the dark cockpit theme. CARTO basemaps now watermark
@@ -65,6 +73,17 @@ function CaptureMap({ mapRef }: { mapRef: MutableRefObject<ReturnType<typeof use
   return null;
 }
 
+function TrafficPane() {
+  const map = useMap();
+  useEffect(() => {
+    if (map.getPane("trafficPane")) return;
+    const pane = map.createPane("trafficPane");
+    pane.style.zIndex = "250";
+    pane.style.pointerEvents = "none";
+  }, [map]);
+  return null;
+}
+
 export default function MapPanel({
   state,
   prefs,
@@ -83,6 +102,13 @@ export default function MapPanel({
   const parked = Boolean(state && !state.driving);
   const startCenter = useRef<[number, number]>([47.6062, -122.3321]);
   const mapRef = useRef<ReturnType<typeof useMap> | null>(null);
+  const [liveTraffic, setLiveTraffic] = useState(false);
+
+  useEffect(() => {
+    void fetchMapsStatus()
+      .then((status) => setLiveTraffic(status.traffic))
+      .catch(() => setLiveTraffic(false));
+  }, []);
 
   useEffect(() => {
     if (!parked) {
@@ -183,6 +209,17 @@ export default function MapPanel({
         attributionControl={false}
       >
         <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
+        {liveTraffic && (
+          <>
+            <TrafficPane />
+            <TileLayer
+              url="/maps/traffic/{z}/{x}/{y}.png"
+              pane="trafficPane"
+              opacity={0.7}
+              attribution="Traffic &copy; TomTom / Azure Maps"
+            />
+          </>
+        )}
         <CaptureMap mapRef={mapRef} />
         <TapPin onPin={(plat, plon) => setPin({ lat: plat, lon: plon })} />
         {fullPath.length > 1 && (
@@ -303,6 +340,7 @@ export default function MapPanel({
             {navBusy ? "Cancelling..." : "Cancel trip"}
           </button>
         )}
+        {liveTraffic && <span className="traffic-badge">Live traffic</span>}
         <button
           type="button"
           className="recenter-btn"
