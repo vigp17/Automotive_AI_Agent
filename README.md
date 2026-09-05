@@ -123,7 +123,7 @@ Full details: [`docs/architecture.md`](docs/architecture.md)
 
 Copy `.env.example` → `.env`.
 
-- **Azure Maps:** set `AZURE_MAPS_KEY`. With `MAPS_BACKEND=auto` (default), routing uses Azure Maps (live traffic) when the key is present, otherwise OpenStreetMap.
+- **Maps / live traffic:** set `TOMTOM_API_KEY` (free TomTom developer key) or `AZURE_MAPS_KEY`. With `MAPS_BACKEND=auto`, TomTom is used first, then Azure Maps, otherwise keyless OpenStreetMap.
 - **Outlook calendar:** set `CALENDAR_BACKEND=graph` and `AZURE_AD_CLIENT_ID` (Azure AD public client, device-code flow, delegated `Calendars.Read`). Click **Connect Outlook** on the dashboard and enter the code at microsoft.com/devicelogin. Until you sign in, the JSON seed calendar is used.
 - **OpenAI / Speech:** set `MOCK_MODE=false` and the Azure OpenAI / Speech keys.
 
@@ -155,7 +155,7 @@ docs/           Architecture, demo script, screenshots
 - [x] Phase 5 (virtual): `VehicleBus` + python-can virtual bus (`VEHICLE_BUS=can`)
 - [x] Live cockpit map (Leaflet) + hold-to-talk mic
 - [x] Outlook calendar (Microsoft Graph device login; JSON seed fallback)
-- [x] Azure Maps when `AZURE_MAPS_KEY` is set (`MAPS_BACKEND=auto`)
+- [x] Live traffic via TomTom (`TOMTOM_API_KEY`) or Azure Maps (`AZURE_MAPS_KEY`); OSM fallback
 - [ ] Phase 5 (hardware): SocketCAN / USB-CAN adapter
 - [ ] Demo video (see [`docs/portfolio-demo-script.md`](docs/portfolio-demo-script.md))
 

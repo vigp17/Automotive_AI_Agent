@@ -1,7 +1,14 @@
 from datetime import datetime, timedelta
 
 from services.graph_calendar import meeting_from_graph, parse_graph_datetime
-from services.maps import AzureMapsClient, MockMapsClient, OsmMapsClient, get_maps_client, reset_maps_client
+from services.maps import (
+    AzureMapsClient,
+    MockMapsClient,
+    OsmMapsClient,
+    TomTomMapsClient,
+    get_maps_client,
+    reset_maps_client,
+)
 
 
 def test_parse_graph_datetime_utc():
@@ -30,6 +37,28 @@ def test_calendar_status_json(client):
     body = resp.json()
     assert body["backend"] == "json"
     assert body["connected"] is False
+    assert body["meeting_count"] >= 1
+    assert body["next_meeting"]["title"] == "Design Review"
+
+
+def test_add_demo_meeting(client):
+    from services.calendar_store import CalendarStore
+    from services.demo_meetings import add_demo_meeting, merge_meetings
+
+    meeting = add_demo_meeting()
+    assert meeting.title == "Design Review"
+    assert meeting.location == "Bellevue Office"
+    again = add_demo_meeting()
+    assert again.start == meeting.start
+
+    store = CalendarStore()
+    store.meetings = []
+    upcoming = merge_meetings([])
+    assert upcoming[0].title == "Design Review"
+
+    resp = client.post("/calendar/demo-meeting")
+    assert resp.status_code == 200
+    assert resp.json()["meeting"]["location"] == "Bellevue Office"
 
 
 def test_calendar_connect_without_client_id(client):
@@ -37,11 +66,12 @@ def test_calendar_connect_without_client_id(client):
     assert resp.status_code == 400
 
 
-def test_maps_auto_uses_osm_without_azure_key(monkeypatch):
+def test_maps_auto_uses_osm_without_keys(monkeypatch):
     from app.config import get_settings
 
     monkeypatch.setenv("MAPS_BACKEND", "auto")
     monkeypatch.setenv("AZURE_MAPS_KEY", "")
+    monkeypatch.setenv("TOMTOM_API_KEY", "")
     get_settings.cache_clear()
     reset_maps_client()
     client = get_maps_client()
@@ -50,7 +80,23 @@ def test_maps_auto_uses_osm_without_azure_key(monkeypatch):
     reset_maps_client()
 
 
+def test_maps_auto_prefers_tomtom(monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setenv("MAPS_BACKEND", "auto")
+    monkeypatch.setenv("TOMTOM_API_KEY", "tt-key")
+    monkeypatch.setenv("AZURE_MAPS_KEY", "")
+    get_settings.cache_clear()
+    reset_maps_client()
+    client = get_maps_client()
+    assert isinstance(client, TomTomMapsClient)
+    assert client.key == "tt-key"
+    get_settings.cache_clear()
+    reset_maps_client()
+
+
 def test_maps_azure_when_key_and_backend_azure():
     client = AzureMapsClient("fake-key")
     assert client.key == "fake-key"
     assert isinstance(MockMapsClient(), MockMapsClient)
+    assert TomTomMapsClient("tt-key").key == "tt-key"

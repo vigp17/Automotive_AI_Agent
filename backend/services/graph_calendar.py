@@ -81,7 +81,9 @@ class GraphCalendarStore:
             meeting = meeting_from_graph(event)
             if meeting and meeting.start >= now:
                 meetings.append(meeting)
-        return meetings
+        from services.demo_meetings import merge_meetings
+
+        return merge_meetings(meetings)
 
     def next_meeting(self) -> Meeting | None:
         upcoming = self.list_meetings()

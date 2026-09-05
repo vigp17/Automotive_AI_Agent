@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     azure_speech_region: str = "eastus"
 
     azure_maps_key: str = ""
+    tomtom_api_key: str = ""
 
     # json = local seed calendar. graph = Microsoft Graph / Outlook
     # (needs AZURE_AD_CLIENT_ID + device login).
@@ -33,8 +34,9 @@ class Settings(BaseSettings):
     azure_ad_client_id: str = ""
 
     # mock = deterministic offline table (tests). osm = Nominatim + OSRM
-    # (real distances, no Azure key). azure = Azure Maps.
-    # auto = Azure Maps when AZURE_MAPS_KEY is set, otherwise OSM.
+    # (real distances, no key). azure = Azure Maps. tomtom = TomTom.
+    # auto = TomTom if TOMTOM_API_KEY is set, else Azure Maps if
+    # AZURE_MAPS_KEY is set, otherwise OSM.
     maps_backend: str = "auto"
 
     # Local Whisper STT used when Azure Speech is not configured. Disable to

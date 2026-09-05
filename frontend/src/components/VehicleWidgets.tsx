@@ -82,6 +82,9 @@ function TripWidget({ state }: { state: VehicleState }) {
           <div className="widget-sub">
             {trip.distance_km ? `${trip.distance_km} km` : ""}
             {trip.eta_min ? ` - ETA ${Math.round(trip.eta_min)} min` : ""}
+            {trip.traffic_delay_min
+              ? ` - ${trip.traffic_delay_min} min traffic`
+              : ""}
             {` - ${trip.active ? "en route" : "arrived"}`}
           </div>
         </>

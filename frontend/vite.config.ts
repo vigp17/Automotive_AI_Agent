@@ -15,6 +15,7 @@ export default defineConfig({
       "/places": backend,
       "/preferences": backend,
       "/calendar": backend,
+      "/maps": backend,
       "/vehicle": { target: backend, ws: true },
     },
   },

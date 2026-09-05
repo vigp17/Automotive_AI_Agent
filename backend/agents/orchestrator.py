@@ -169,6 +169,7 @@ def trip_planner_node(state: CabinState):
         destination=meeting.location,
         eta_min=route["duration_min"],
         distance_km=route["distance_km"],
+        traffic_delay_min=route["traffic_delay_min"],
     )
     reply = " ".join(parts)
     return {"messages": [AIMessage(content=reply)], "reply": reply}

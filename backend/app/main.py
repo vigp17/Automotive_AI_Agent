@@ -12,7 +12,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel, Field
 
 from agents.orchestrator import Orchestrator
@@ -135,6 +135,7 @@ def root():
     <li><a href="/alerts">/alerts</a> — proactive alerts</li>
     <li><a href="/preferences">/preferences</a> — driver home, work, default temp</li>
     <li><a href="/calendar/status">/calendar/status</a> — JSON or Outlook Graph</li>
+    <li><a href="/maps/status">/maps/status</a> — OSM, TomTom, or Azure Maps</li>
     <li><a href="/healthz">/healthz</a> — health check</li>
   </ul>
   <p>Do not open <code>/vehicle/ws</code> in the browser — that is a WebSocket and will look blank.</p>
@@ -210,6 +211,7 @@ async def navigate(req: NavigateRequest):
         destination=req.label,
         eta_min=route["duration_min"],
         distance_km=route["distance_km"],
+        traffic_delay_min=route["traffic_delay_min"],
     )
     return {
         "destination": req.label,
@@ -262,15 +264,21 @@ def calendar_status():
         login_pending,
     )
 
+    from services.calendar_store import get_calendar_store
+
     settings = get_settings()
     backend = settings.calendar_backend.lower().strip()
     pending = login_pending()
+    meetings = get_calendar_store().list_meetings()
+    next_meeting = meetings[0].to_dict() if meetings else None
     return {
         "backend": backend,
         "configured": graph_configured(),
         "connected": graph_connected() if backend == "graph" else False,
         "pending": pending,
         "error": last_login_error(),
+        "meeting_count": len(meetings),
+        "next_meeting": next_meeting,
     }
 
 
@@ -284,14 +292,50 @@ def calendar_connect():
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+@app.post("/calendar/demo-meeting")
+def calendar_demo_meeting():
+    """Add a sample upcoming meeting so the trip-planning demo has a destination."""
+    from services.demo_meetings import add_demo_meeting
+
+    meeting = add_demo_meeting()
+    return {"meeting": meeting.to_dict(), "created": True}
+
+
 @app.post("/calendar/logout")
 def calendar_logout():
     from services.calendar_store import reset_calendar_store
+    from services.demo_meetings import clear_demo_meetings
     from services.graph_auth import logout_graph
 
     logout_graph()
+    clear_demo_meetings()
     reset_calendar_store()
     return {"connected": False}
+
+
+@app.get("/maps/status")
+def maps_status_endpoint(request: Request):
+    from services.maps import maps_status
+
+    return _as_page(request, "maps/status", maps_status())
+
+
+@app.get("/maps/traffic/{z}/{x}/{y}.png")
+async def maps_traffic_tile(z: int, x: int, y: int):
+    """Proxy traffic-flow tiles so the provider key never reaches the browser."""
+    import httpx
+
+    from services.maps import fetch_traffic_tile
+
+    if not (0 <= z <= 22 and x >= 0 and y >= 0):
+        raise HTTPException(status_code=400, detail="invalid tile")
+    try:
+        data = await fetch_traffic_tile(z, x, y)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail="traffic tile unavailable") from exc
+    return Response(content=data, media_type="image/png")
 
 
 @app.get("/vehicle/can")

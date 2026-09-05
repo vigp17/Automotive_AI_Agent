@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+from urllib.parse import quote
 
 import httpx
 
@@ -314,22 +315,27 @@ class AzureMapsClient:
         self, origin: tuple[float, float], dest: tuple[float, float], label: str
     ) -> dict:
         async with httpx.AsyncClient(timeout=20) as client:
-            resp = await client.get(
-                f"{self.BASE}/route/directions/json",
-                params={
-                    "api-version": "1.0",
-                    "subscription-key": self.key,
-                    "query": f"{origin[0]},{origin[1]}:{dest[0]},{dest[1]}",
-                    "traffic": "true",
-                },
-            )
-            resp.raise_for_status()
-            summary = resp.json()["routes"][0]["summary"]
-            points = [
-                (p["latitude"], p["longitude"])
-                for leg in resp.json()["routes"][0]["legs"]
-                for p in leg["points"]
-            ]
+            try:
+                resp = await client.get(
+                    f"{self.BASE}/route/directions/json",
+                    params={
+                        "api-version": "1.0",
+                        "subscription-key": self.key,
+                        "query": f"{origin[0]},{origin[1]}:{dest[0]},{dest[1]}",
+                        "traffic": "true",
+                        "travelMode": "car",
+                        "computeTravelTimeFor": "all",
+                    },
+                )
+                resp.raise_for_status()
+                summary = resp.json()["routes"][0]["summary"]
+                points = [
+                    (p["latitude"], p["longitude"])
+                    for leg in resp.json()["routes"][0]["legs"]
+                    for p in leg["points"]
+                ]
+            except (httpx.HTTPError, KeyError, IndexError, TypeError):
+                return await OsmMapsClient().route_to_coords(origin, dest, label)
         return {
             "destination": label,
             "dest_lat": dest[0],
@@ -341,7 +347,99 @@ class AzureMapsClient:
         }
 
 
-_client: MockMapsClient | OsmMapsClient | AzureMapsClient | None = None
+class TomTomMapsClient:
+    """TomTom Search + Routing with live traffic. Free developer key."""
+
+    BASE = "https://api.tomtom.com"
+
+    def __init__(self, key: str) -> None:
+        self.key = key
+
+    async def geocode(self, query: str) -> tuple[float, float]:
+        known = lookup_place(query)
+        if known:
+            return known
+        hits = await self.search(query, limit=1)
+        if hits:
+            return (hits[0]["lat"], hits[0]["lon"])
+        raise ValueError(f"Could not geocode {query!r}")
+
+    async def search(self, query: str, limit: int = 5) -> list[dict]:
+        local = search_known_places(query, limit=limit)
+        remaining = max(0, limit - len(local))
+        if remaining == 0:
+            return local
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                resp = await client.get(
+                    f"{self.BASE}/search/2/search/{quote(query)}.json",
+                    params={"key": self.key, "limit": remaining},
+                )
+                resp.raise_for_status()
+                remote = []
+                seen = {(round(p["lat"], 4), round(p["lon"], 4)) for p in local}
+                for item in resp.json().get("results", []):
+                    pos = item.get("position") or {}
+                    if "lat" not in pos or "lon" not in pos:
+                        continue
+                    key = (round(float(pos["lat"]), 4), round(float(pos["lon"]), 4))
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    poi = item.get("poi") or {}
+                    address = item.get("address") or {}
+                    label = poi.get("name") or address.get("freeformAddress") or query
+                    remote.append({"label": label, "lat": float(pos["lat"]), "lon": float(pos["lon"])})
+                    if len(local) + len(remote) >= limit:
+                        break
+                return local + remote
+        except (httpx.HTTPError, ValueError, KeyError, TypeError):
+            return local or []
+
+    async def route(self, origin: tuple[float, float], destination: str) -> dict:
+        dest = await self.geocode(destination)
+        return await self.route_to_coords(origin, dest, destination)
+
+    async def route_to_coords(
+        self, origin: tuple[float, float], dest: tuple[float, float], label: str
+    ) -> dict:
+        path = f"{origin[0]},{origin[1]}:{dest[0]},{dest[1]}"
+        try:
+            async with httpx.AsyncClient(timeout=20) as client:
+                resp = await client.get(
+                    f"{self.BASE}/routing/1/calculateRoute/{path}/json",
+                    params={
+                        "key": self.key,
+                        "traffic": "true",
+                        "travelMode": "car",
+                        "computeTravelTimeFor": "all",
+                    },
+                )
+                resp.raise_for_status()
+                route = resp.json()["routes"][0]
+                summary = route["summary"]
+                points = [
+                    (p["latitude"], p["longitude"])
+                    for leg in route.get("legs") or []
+                    for p in leg.get("points") or []
+                ]
+        except (httpx.HTTPError, KeyError, IndexError, TypeError):
+            return await OsmMapsClient().route_to_coords(origin, dest, label)
+        return {
+            "destination": label,
+            "dest_lat": dest[0],
+            "dest_lon": dest[1],
+            "distance_km": round(summary["lengthInMeters"] / 1000, 1),
+            "duration_min": round(summary["travelTimeInSeconds"] / 60, 1),
+            "traffic_delay_min": round(summary.get("trafficDelayInSeconds", 0) / 60, 1),
+            "points": points[:: max(1, len(points) // 20)] if points else [],
+        }
+
+
+_client: MockMapsClient | OsmMapsClient | AzureMapsClient | TomTomMapsClient | None = None
+
+AZURE_TRAFFIC_TILE = "https://atlas.microsoft.com/traffic/flow/tile/png"
+TOMTOM_TRAFFIC_TILE = "https://api.tomtom.com/traffic/map/4/tile/flow/relative"
 
 
 def reset_maps_client() -> None:
@@ -349,15 +447,64 @@ def reset_maps_client() -> None:
     _client = None
 
 
+def resolved_maps_backend() -> str:
+    settings = get_settings()
+    backend = settings.maps_backend.lower().strip()
+    if backend == "auto":
+        if settings.tomtom_api_key.strip():
+            return "tomtom"
+        if settings.azure_maps_key.strip():
+            return "azure"
+        return "osm"
+    return backend
+
+
+def maps_status() -> dict:
+    backend = resolved_maps_backend()
+    return {
+        "backend": backend,
+        "configured": backend in {"tomtom", "azure"},
+        "traffic": backend in {"tomtom", "azure"},
+    }
+
+
+async def fetch_traffic_tile(z: int, x: int, y: int) -> bytes:
+    """Traffic-flow tile from TomTom or Azure Maps. Key stays on the server."""
+    settings = get_settings()
+    backend = resolved_maps_backend()
+    async with httpx.AsyncClient(timeout=15) as client:
+        if backend == "tomtom" and settings.tomtom_api_key.strip():
+            resp = await client.get(
+                f"{TOMTOM_TRAFFIC_TILE}/{z}/{x}/{y}.png",
+                params={"key": settings.tomtom_api_key.strip()},
+            )
+        elif backend == "azure" and settings.azure_maps_key.strip():
+            resp = await client.get(
+                AZURE_TRAFFIC_TILE,
+                params={
+                    "api-version": "1.0",
+                    "style": "relative",
+                    "zoom": z,
+                    "x": x,
+                    "y": y,
+                    "subscription-key": settings.azure_maps_key.strip(),
+                },
+            )
+        else:
+            raise ValueError("Live traffic is not configured")
+        resp.raise_for_status()
+        return resp.content
+
+
 def get_maps_client():
     global _client
     if _client is None:
         settings = get_settings()
-        backend = settings.maps_backend.lower().strip()
-        if backend == "auto":
-            backend = "azure" if settings.azure_maps_key else "osm"
-        if backend == "azure" and settings.azure_maps_key:
-            _client = AzureMapsClient(settings.azure_maps_key)
+        backend = resolved_maps_backend()
+        if backend == "tomtom" and settings.tomtom_api_key.strip():
+            _client = TomTomMapsClient(settings.tomtom_api_key.strip())
+        elif backend == "azure" and settings.azure_maps_key.strip():
+            _client = AzureMapsClient(settings.azure_maps_key.strip())
         elif backend == "mock":
             _client = MockMapsClient()
         else:

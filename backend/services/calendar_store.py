@@ -59,15 +59,13 @@ class CalendarStore:
         self.meetings.sort(key=lambda m: m.start)
 
     def next_meeting(self) -> Meeting | None:
-        now = datetime.now()
-        for meeting in self.meetings:
-            if meeting.start >= now:
-                return meeting
-        return None
+        upcoming = self.list_meetings()
+        return upcoming[0] if upcoming else None
 
     def list_meetings(self) -> list[Meeting]:
-        now = datetime.now()
-        return [m for m in self.meetings if m.start >= now]
+        from services.demo_meetings import merge_meetings
+
+        return merge_meetings(self.meetings)
 
 
 _store: CalendarStore | GraphCalendarStore | None = None
