@@ -45,10 +45,12 @@ def test_add_demo_meeting(client):
     from services.calendar_store import CalendarStore
     from services.demo_meetings import add_demo_meeting, merge_meetings
 
-    meeting = add_demo_meeting()
+    meeting, created = add_demo_meeting()
+    assert created is True
     assert meeting.title == "Design Review"
     assert meeting.location == "Bellevue Office"
-    again = add_demo_meeting()
+    again, created_again = add_demo_meeting()
+    assert created_again is False
     assert again.start == meeting.start
 
     store = CalendarStore()
@@ -58,7 +60,9 @@ def test_add_demo_meeting(client):
 
     resp = client.post("/calendar/demo-meeting")
     assert resp.status_code == 200
-    assert resp.json()["meeting"]["location"] == "Bellevue Office"
+    body = resp.json()
+    assert body["meeting"]["location"] == "Bellevue Office"
+    assert body["created"] is False
 
 
 def test_calendar_connect_without_client_id(client):

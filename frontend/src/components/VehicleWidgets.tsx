@@ -80,12 +80,16 @@ function TripWidget({ state }: { state: VehicleState }) {
             </div>
           )}
           <div className="widget-sub">
-            {trip.distance_km ? `${trip.distance_km} km` : ""}
-            {trip.eta_min ? ` - ETA ${Math.round(trip.eta_min)} min` : ""}
-            {trip.traffic_delay_min
-              ? ` - ${trip.traffic_delay_min} min traffic`
-              : ""}
-            {` - ${trip.active ? "en route" : "arrived"}`}
+            {[
+              trip.distance_km != null ? `${trip.distance_km} km` : null,
+              trip.eta_min != null ? `ETA ${Math.round(trip.eta_min)} min` : null,
+              trip.traffic_delay_min != null
+                ? `${Math.round(trip.traffic_delay_min)} min traffic`
+                : null,
+              trip.active ? "en route" : "arrived",
+            ]
+              .filter(Boolean)
+              .join(" - ")}
           </div>
         </>
       ) : (

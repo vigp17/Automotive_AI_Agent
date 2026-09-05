@@ -26,6 +26,19 @@ export default function OutlookConnect() {
 
   if (!status || status.backend !== "graph") return null;
 
+  const addSample = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await addDemoMeeting();
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not add sample meeting");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const start = async () => {
     setBusy(true);
     setError(null);
@@ -54,16 +67,10 @@ export default function OutlookConnect() {
             <button
               type="button"
               className="prefs-btn"
-              onClick={() =>
-                void addDemoMeeting()
-                  .then(() => refresh())
-                  .catch((err) =>
-                    setError(err instanceof Error ? err.message : "Could not add sample meeting"),
-                  )
-              }
+              onClick={() => void addSample()}
               disabled={busy}
             >
-              Add sample meeting
+              {busy ? "Adding..." : "Add sample meeting"}
             </button>
           )}
         </>

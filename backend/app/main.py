@@ -297,8 +297,8 @@ def calendar_demo_meeting():
     """Add a sample upcoming meeting so the trip-planning demo has a destination."""
     from services.demo_meetings import add_demo_meeting
 
-    meeting = add_demo_meeting()
-    return {"meeting": meeting.to_dict(), "created": True}
+    meeting, created = add_demo_meeting()
+    return {"meeting": meeting.to_dict(), "created": created}
 
 
 @app.post("/calendar/logout")

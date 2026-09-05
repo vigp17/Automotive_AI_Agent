@@ -80,10 +80,10 @@ def list_demo_meetings() -> list[Meeting]:
     return [meeting for meeting in _load() if meeting.start >= now]
 
 
-def add_demo_meeting() -> Meeting:
+def add_demo_meeting() -> tuple[Meeting, bool]:
     existing = list_demo_meetings()
     if existing:
-        return existing[0]
+        return existing[0], False
     start = datetime.now().replace(second=0, microsecond=0) + timedelta(
         hours=_DEFAULT["offset_hours"]
     )
@@ -100,7 +100,7 @@ def add_demo_meeting() -> Meeting:
     global _meetings
     _meetings = meetings
     _save(meetings)
-    return meeting
+    return meeting, True
 
 
 def clear_demo_meetings() -> None:

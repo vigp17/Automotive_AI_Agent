@@ -450,21 +450,28 @@ def reset_maps_client() -> None:
 def resolved_maps_backend() -> str:
     settings = get_settings()
     backend = settings.maps_backend.lower().strip()
+    tomtom = bool(settings.tomtom_api_key.strip())
+    azure = bool(settings.azure_maps_key.strip())
     if backend == "auto":
-        if settings.tomtom_api_key.strip():
+        if tomtom:
             return "tomtom"
-        if settings.azure_maps_key.strip():
+        if azure:
             return "azure"
+        return "osm"
+    if backend == "tomtom" and not tomtom:
+        return "osm"
+    if backend == "azure" and not azure:
         return "osm"
     return backend
 
 
 def maps_status() -> dict:
     backend = resolved_maps_backend()
+    live = backend in {"tomtom", "azure"}
     return {
         "backend": backend,
-        "configured": backend in {"tomtom", "azure"},
-        "traffic": backend in {"tomtom", "azure"},
+        "configured": live,
+        "traffic": live,
     }
 
 

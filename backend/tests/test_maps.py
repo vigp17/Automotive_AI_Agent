@@ -84,6 +84,25 @@ def test_maps_status_osm_without_key(client, monkeypatch):
     reset_maps_client()
 
 
+def test_maps_status_tomtom_without_key_is_osm(client, monkeypatch):
+    from app.config import get_settings
+    from services.maps import reset_maps_client
+
+    monkeypatch.setenv("MAPS_BACKEND", "tomtom")
+    monkeypatch.setenv("TOMTOM_API_KEY", "")
+    monkeypatch.setenv("AZURE_MAPS_KEY", "")
+    get_settings.cache_clear()
+    reset_maps_client()
+    resp = client.get("/maps/status")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["backend"] == "osm"
+    assert body["traffic"] is False
+    assert body["configured"] is False
+    get_settings.cache_clear()
+    reset_maps_client()
+
+
 def test_traffic_tile_without_key(client, monkeypatch):
     from app.config import get_settings
 
