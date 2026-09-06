@@ -17,7 +17,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install ruff
-        run: pip install ruff==0.15.7
+        run: pip install -r backend/requirements-dev.txt
 
       - name: Lint backend
         run: ruff check backend
