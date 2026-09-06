@@ -16,3 +16,6 @@ backend/data/memory.sqlite*
 *.tsbuildinfo
 backend/data/msal_token.json
 backend/data/demo_meetings.json
+
+# Personal recording notes, kept out of the public repo.
+docs/portfolio-demo-script.md

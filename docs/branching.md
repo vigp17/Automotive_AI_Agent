@@ -7,7 +7,7 @@
 1. Create a feature branch from `main`
 2. Implement and test locally
 3. Open a pull request into `main`
-4. Wait for CI (backend tests + frontend build)
+4. Wait for CI (lint, backend tests, frontend build)
 5. Merge the PR
 
 ```bash
