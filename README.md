@@ -77,6 +77,18 @@ docker compose up --build
 # frontend → http://localhost:3000  |  backend → http://localhost:8000
 ```
 
+### Recording a demo
+
+```bash
+scripts/demo.sh
+```
+
+Forces a known-good demo state (seed calendar with a meeting a couple of hours out,
+empty chat history, parked vehicle, cabin at your saved default), verifies the three
+demo prompts actually answer correctly, then starts backend and dashboard and holds
+them until Ctrl-C. Flags: `--check-only` verifies without holding, `--graph` keeps the
+Outlook backend, `--mock-maps` avoids the network.
+
 ### Tests and lint
 
 ```bash

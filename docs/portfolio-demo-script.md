@@ -1,7 +1,16 @@
 # Portfolio demo script (~2–3 minutes)
 
 Use this when recording a Loom/screen capture for LinkedIn, your resume, or interviews.
-Run the app first (`README.md` quickstart), then open http://localhost:5173.
+
+Start with the pre-flight, which forces a known-good state and proves every prompt
+below actually answers before you hit record:
+
+```bash
+scripts/demo.sh
+```
+
+It leaves the dashboard running at http://localhost:5173. Add `--graph` if you want to
+demo the Outlook connection rather than the seed calendar.
 
 ---
 
@@ -62,7 +71,7 @@ Type: **"Do I have enough battery for the airport?"**
 ## 2:30 — Close (15 sec)
 
 > "Built with Python, FastAPI, LangGraph, React, and Azure-ready integrations for OpenAI,
-> Speech, and Maps. Twenty automated tests, Docker deployment, and a clean path to real
+> Speech, and Maps. Sixty-six automated tests, Docker deployment, and a clean path to real
 > vehicle HMI via WebView and the VehicleBus abstraction."
 
 *Show GitHub repo URL on screen.*
@@ -73,6 +82,6 @@ Type: **"Do I have enough battery for the airport?"**
 
 - Use **1440p or 1080p** window, dark theme already looks good
 - Hide browser bookmarks bar; zoom to 100%
-- Pre-load the app so widgets show live data before you hit record
+- Run `scripts/demo.sh` and let it finish its checks before you hit record
 - Keep mouse movement slow and deliberate
 - Export as MP4; upload to LinkedIn or embed in README once hosted
