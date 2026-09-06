@@ -8,7 +8,7 @@
 
 A **voice-enabled, multi-agent in-cabin assistant** for software-defined vehicles. A LangGraph orchestrator routes driver requests to Navigation, EV Charging, HVAC, and Calendar agents operating over live vehicle signals — with a React cabin dashboard and a clean path to production HMI integration.
 
-> **Demo:** run locally in under 2 minutes (no Azure keys required). See [Quickstart](#quickstart) and the [2-min demo script](docs/portfolio-demo-script.md).
+> **Demo:** run locally in under 2 minutes (no Azure keys required). See [Quickstart](#quickstart) and the [feature walkthrough](docs/demo.md).
 
 ![Cabin dashboard — live vehicle widgets and multi-agent chat](docs/screenshots/dashboard.png)
 
@@ -89,6 +89,9 @@ demo prompts actually answer correctly, then starts backend and dashboard and ho
 them until Ctrl-C. Flags: `--check-only` verifies without holding, `--graph` keeps the
 Outlook backend, `--mock-maps` avoids the network.
 
+[`docs/demo.md`](docs/demo.md) walks through every feature end to end — alerts, the map,
+voice, virtual CAN, Outlook, and live traffic.
+
 ### Tests and lint
 
 ```bash
@@ -161,7 +164,7 @@ backend/
   reports/      Trip report generator
   tests/        pytest (66 tests, fully offline)
 frontend/       React + Vite cabin dashboard
-docs/           Architecture, demo script, screenshots
+docs/           Architecture, feature walkthrough, branch workflow, screenshots
 ```
 
 ---
@@ -176,7 +179,7 @@ docs/           Architecture, demo script, screenshots
 - [x] Outlook calendar (Microsoft Graph device login; JSON seed fallback)
 - [x] Live traffic via TomTom (`TOMTOM_API_KEY`) or Azure Maps (`AZURE_MAPS_KEY`); OSM fallback
 - [ ] Phase 5 (hardware): SocketCAN / USB-CAN adapter
-- [ ] Demo video (see [`docs/portfolio-demo-script.md`](docs/portfolio-demo-script.md))
+- [ ] Demo video
 
 ---
 

@@ -242,7 +242,7 @@ cat <<EOF
 
 ${GREEN}${BOLD}Ready to record.${OFF}  http://localhost:$FRONTEND_PORT
 
-  Prompts, in order (docs/portfolio-demo-script.md has the narration):
+  Prompts, in order:
     1. Get me to my next meeting
     2. Set temperature to 22          <- mic, if you are demoing voice
     3. Do I have enough battery for the airport?
