@@ -7,6 +7,7 @@ import base64
 import contextlib
 import html
 import json
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile, WebSocket, WebSocketDisconnect
@@ -23,6 +24,7 @@ from simulator.vehicle import get_simulator
 from speech.azure_speech import get_speech_client
 
 TICK_SECONDS = 1.0
+logger = logging.getLogger(__name__)
 
 
 def _as_page(request: Request, title: str, data: dict):
@@ -52,8 +54,11 @@ async def _sim_loop() -> None:
     sim = get_simulator()
     while True:
         await asyncio.sleep(TICK_SECONDS)
-        sim.tick(TICK_SECONDS)
-        publish_vehicle_frames()
+        try:
+            sim.tick(TICK_SECONDS)
+            publish_vehicle_frames()
+        except Exception:  # noqa: BLE001 — one bad tick must not stop the drive loop
+            logger.exception("simulator tick failed")
 
 
 @asynccontextmanager
