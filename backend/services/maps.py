@@ -389,7 +389,9 @@ class TomTomMapsClient:
                     poi = item.get("poi") or {}
                     address = item.get("address") or {}
                     label = poi.get("name") or address.get("freeformAddress") or query
-                    remote.append({"label": label, "lat": float(pos["lat"]), "lon": float(pos["lon"])})
+                    remote.append(
+                        {"label": label, "lat": float(pos["lat"]), "lon": float(pos["lon"])}
+                    )
                     if len(local) + len(remote) >= limit:
                         break
                 return local + remote

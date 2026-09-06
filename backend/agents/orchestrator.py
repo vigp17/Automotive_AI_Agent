@@ -52,7 +52,13 @@ def classify_by_keywords(text: str) -> str:
         return "trip_planning"
     if any(w in t for w in ("set home", "set work", "home is", "work is")):
         return "navigation"
-    if any(w in t for w in ("temp", "degrees", "climate", "cold", "hot", "warmer", "cooler", "ac ", "heat", "usual")):
+    if any(
+        w in t
+        for w in (
+            "temp", "degrees", "climate", "cold", "hot",
+            "warmer", "cooler", "ac ", "heat", "usual",
+        )
+    ):
         return "hvac"
     if any(w in t for w in ("battery", "soc", "charging", "charger", "charge", "range")):
         return "ev"
@@ -89,7 +95,8 @@ def classify_intent(text: str) -> str:
     llm = get_chat_model().with_structured_output(RouteDecision)
     decision = llm.invoke(
         "Classify this in-car driver request into one intent.\n"
-        "- trip_planning: getting to a calendar meeting (combines calendar + navigation + charging)\n"
+        "- trip_planning: getting to a calendar meeting"
+        " (combines calendar + navigation + charging)\n"
         "- navigation: routes, ETA, traffic\n"
         "- ev: battery, range, charging\n"
         "- hvac: cabin temperature, climate comfort\n"
@@ -125,7 +132,13 @@ def _agent_node(agent):
 
 
 def trip_planner_node(state: CabinState):
-    """Deterministic cross-agent workflow: calendar -> navigation -> EV."""
+    """Deterministic cross-agent workflow: calendar -> navigation -> EV.
+
+    Runs the async maps call via `asyncio.run`, so this node (and therefore
+    `Orchestrator.respond`) must be invoked from a thread with no running event
+    loop -- `/chat` and `/voice` do that with `run_in_threadpool`. Switching to
+    `graph.ainvoke` would need this call reworked to `await`.
+    """
     sim = get_simulator()
     meeting = get_calendar_store().next_meeting()
     if meeting is None:

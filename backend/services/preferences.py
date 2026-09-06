@@ -71,10 +71,7 @@ def reset_preferences(path: Path | None = None) -> DriverPreferences:
 def get_preferences() -> DriverPreferences:
     global _store
     if _store is None:
-        if _path.exists():
-            _store = _from_dict(json.loads(_path.read_text()))
-        else:
-            _store = _defaults()
+        _store = _from_dict(json.loads(_path.read_text())) if _path.exists() else _defaults()
     return _store
 
 

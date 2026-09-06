@@ -10,13 +10,23 @@ import json
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import (
+    FastAPI,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    UploadFile,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel, Field
 
 from agents.orchestrator import Orchestrator
+from app.config import get_settings
 from reports.trip_report import build_trip_report
 from services.alerts import cockpit_payload, evaluate_alerts
 from simulator.bus import get_bus, publish_vehicle_frames
@@ -84,7 +94,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="AI Cabin Copilot", version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=get_settings().cors_origin_list(),
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -143,7 +153,8 @@ def root():
     <li><a href="/maps/status">/maps/status</a> — OSM, TomTom, or Azure Maps</li>
     <li><a href="/healthz">/healthz</a> — health check</li>
   </ul>
-  <p>Do not open <code>/vehicle/ws</code> in the browser — that is a WebSocket and will look blank.</p>
+  <p>Do not open <code>/vehicle/ws</code> in the browser — that is a WebSocket
+     and will look blank.</p>
 </body></html>
 """
 
@@ -262,14 +273,13 @@ def put_prefs(req: PreferencesUpdate):
 @app.get("/calendar/status")
 def calendar_status():
     from app.config import get_settings
+    from services.calendar_store import get_calendar_store
     from services.graph_auth import (
         graph_configured,
         graph_connected,
         last_login_error,
         login_pending,
     )
-
-    from services.calendar_store import get_calendar_store
 
     settings = get_settings()
     backend = settings.calendar_backend.lower().strip()

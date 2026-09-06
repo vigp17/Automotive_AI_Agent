@@ -57,7 +57,10 @@ def test_can_frames_logged():
     try:
         CanBus(bridge).write_signal("hvac.target_temp_c", 19.0)
         frames = bridge.recent_frames()
-        assert any(f["signal"] == "hvac.target_temp_c" and f["arbitration_id"] == "0x3a1" for f in frames)
+        assert any(
+            f["signal"] == "hvac.target_temp_c" and f["arbitration_id"] == "0x3a1"
+            for f in frames
+        )
     finally:
         bridge.close()
 

@@ -77,11 +77,18 @@ docker compose up --build
 # frontend → http://localhost:3000  |  backend → http://localhost:8000
 ```
 
-### Tests
+### Tests and lint
 
 ```bash
 cd backend && ../.venv/bin/python -m pytest
 ```
+
+```bash
+ruff check backend
+```
+
+CI runs both plus the frontend build on every pull request. Backend dependency
+versions are pinned in `backend/requirements.txt`.
 
 ## Branch workflow
 
