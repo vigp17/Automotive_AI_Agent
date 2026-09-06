@@ -99,11 +99,13 @@ cd backend && ../.venv/bin/python -m pytest
 ```
 
 ```bash
-ruff check backend
+.venv/bin/pip install -r backend/requirements-dev.txt   # once
+.venv/bin/ruff check backend
 ```
 
-CI runs both plus the frontend build on every pull request. Backend dependency
-versions are pinned in `backend/requirements.txt`.
+CI runs both plus the frontend build on every pull request. Dependency versions
+are pinned: runtime in `backend/requirements.txt`, tooling in
+`backend/requirements-dev.txt`.
 
 ## Branch workflow
 

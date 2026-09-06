@@ -1,0 +1,5 @@
+# Dev-only tooling. Runtime deps live in requirements.txt.
+# CI, the Cloud Agent bootstrap, and the README all install ruff from here,
+# so the pinned version has one home.
+
+ruff==0.15.7

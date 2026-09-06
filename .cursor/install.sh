@@ -17,8 +17,8 @@ fi
 python3 -m venv .venv
 .venv/bin/pip install --upgrade pip
 .venv/bin/pip install -r backend/requirements.txt
-# ruff is the lint tool CI runs; pin it to the same version.
-.venv/bin/pip install ruff==0.15.7
+# ruff is the lint tool CI runs; same pinned version, one source.
+.venv/bin/pip install -r backend/requirements-dev.txt
 
 # Frontend: clean, lockfile-exact install (matches CI and the Dockerfile).
 (cd frontend && npm ci --no-fund --no-audit)
