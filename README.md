@@ -23,7 +23,7 @@ A **voice-enabled, multi-agent in-cabin assistant** for software-defined vehicle
 | **Vehicle signal layer** | Stateful simulator (SOC, speed, GPS, HVAC) behind a `VehicleBus` interface for future CAN/Ethernet |
 | **Voice pipeline** | Browser Web Speech API + local Whisper STT fallback — works without cloud keys |
 | **Production-ready seams** | Azure OpenAI, Speech, and Maps clients behind mock/real switches; Docker Compose deployment |
-| **Test coverage** | 20 pytest tests covering simulator physics, API endpoints, orchestration, and trip planning |
+| **Test coverage** | 66 pytest tests covering simulator physics, API endpoints, orchestration, and trip planning |
 
 **Tech stack:** Python · FastAPI · LangGraph · LangChain · Azure OpenAI · Azure Speech · Azure Maps · React · TypeScript · Vite · Docker · SQLite
 
@@ -140,7 +140,7 @@ backend/
   simulator/    Vehicle physics + VehicleBus seam
   speech/       Azure Speech + local Whisper + mocks
   reports/      Trip report generator
-  tests/        pytest (20 tests, fully offline)
+  tests/        pytest (66 tests, fully offline)
 frontend/       React + Vite cabin dashboard
 docs/           Architecture, demo script, screenshots
 ```
