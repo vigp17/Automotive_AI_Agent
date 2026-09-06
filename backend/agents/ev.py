@@ -10,4 +10,6 @@ SYSTEM_PROMPT = (
 
 
 def build_ev_agent():
-    return build_tool_agent(get_chat_model(), [get_battery_status, plan_charging_stop], SYSTEM_PROMPT)
+    return build_tool_agent(
+        get_chat_model(), [get_battery_status, plan_charging_stop], SYSTEM_PROMPT
+    )

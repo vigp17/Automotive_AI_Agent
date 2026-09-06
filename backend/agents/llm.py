@@ -37,10 +37,16 @@ def _match_tool(text: str, available: set[str]):
     num = _NUM_RE.search(text)
 
     if "set_temperature" in available:
-        if "usual" in text or "preferred" in text or "my temperature" in text or "default temp" in text:
-            if "save" in text or "remember" in text or "set my default" in text:
-                if "set_preferred_temperature" in available and num:
-                    return "set_preferred_temperature", {"celsius": float(num.group(1))}
+        wants_preferred = (
+            "usual" in text
+            or "preferred" in text
+            or "my temperature" in text
+            or "default temp" in text
+        )
+        if wants_preferred:
+            saving = "save" in text or "remember" in text or "set my default" in text
+            if saving and "set_preferred_temperature" in available and num:
+                return "set_preferred_temperature", {"celsius": float(num.group(1))}
             if "apply_preferred_temperature" in available:
                 return "apply_preferred_temperature", {}
         if ("temp" in text or "degrees" in text or "climate" in text) and num and (
@@ -121,7 +127,9 @@ def _match_tool(text: str, available: set[str]):
         return "get_speed", {}
     if "get_location" in available and ("where am i" in text or "location" in text):
         return "get_location", {}
-    if "get_cabin_temperature" in available and ("temp" in text or "cabin" in text or "warm" in text):
+    if "get_cabin_temperature" in available and (
+        "temp" in text or "cabin" in text or "warm" in text
+    ):
         return "get_cabin_temperature", {}
     return None
 
@@ -134,7 +142,10 @@ def summarize_tool_result(tool_name: str, payload: str) -> str:
         return str(payload)
 
     if tool_name in ("get_soc", "get_battery_status"):
-        text = f"Battery is at {data.get('soc_percent')}% with about {data.get('range_km')} km of range."
+        text = (
+            f"Battery is at {data.get('soc_percent')}% with about "
+            f"{data.get('range_km')} km of range."
+        )
         if data.get("low_battery"):
             text += " That's getting low - I'd plan a charging stop soon."
         return text
@@ -178,7 +189,8 @@ def summarize_tool_result(tool_name: str, payload: str) -> str:
             station = data.get("recommended_station") or data.get("nearest_station") or {}
             msg = (
                 f"Battery is at {data.get('soc_percent')}% - not enough for this trip"
-                f" ({data.get('needed_kwh', '?')} kWh needed, {data.get('usable_kwh', '?')} kWh usable)."
+                f" ({data.get('needed_kwh', '?')} kWh needed,"
+                f" {data.get('usable_kwh', '?')} kWh usable)."
                 if "needed_kwh" in data
                 else f"Battery is at {data.get('soc_percent')}% - a charge is recommended."
             )
@@ -188,7 +200,10 @@ def summarize_tool_result(tool_name: str, payload: str) -> str:
                     f"({station.get('power_kw')} kW)."
                 )
             if data.get("recommended_charge_minutes"):
-                msg += f" About {data['recommended_charge_minutes']} minutes of charging should do it."
+                msg += (
+                    f" About {data['recommended_charge_minutes']} minutes of charging"
+                    " should do it."
+                )
             return msg
         return (
             f"You're good - battery at {data.get('soc_percent')}% comfortably covers this trip, "
@@ -243,13 +258,23 @@ class MockChatModel(BaseChatModel):
                 name, args = match
                 return AIMessage(
                     content="",
-                    tool_calls=[{"name": name, "args": args, "id": "mock_call_1", "type": "tool_call"}],
+                    tool_calls=[
+                        {"name": name, "args": args, "id": "mock_call_1", "type": "tool_call"}
+                    ],
                 )
 
         if "hello" in text or "hi" in text or "hey" in text:
-            return AIMessage(content="Hi! I'm your cabin copilot. I can handle navigation, charging, climate and your calendar - what do you need?")
+            return AIMessage(
+                content=(
+                    "Hi! I'm your cabin copilot. I can handle navigation, charging,"
+                    " climate and your calendar - what do you need?"
+                )
+            )
         return AIMessage(
-            content="I can help with navigation, EV charging, climate control and your calendar. Try 'navigate to the office' or 'set temperature to 22'."
+            content=(
+                "I can help with navigation, EV charging, climate control and your"
+                " calendar. Try 'navigate to the office' or 'set temperature to 22'."
+            )
         )
 
 

@@ -1,13 +1,20 @@
-fastapi
-uvicorn[standard]
-pydantic-settings
-httpx
-python-multipart
-langchain-core
-langchain-openai
-langgraph
-langgraph-checkpoint-sqlite
-faster-whisper
-pytest
-python-can
-msal
+# Pinned to the versions this project is tested against, so a clone months from
+# now builds the same stack. pyproject.toml keeps the loose declaration; bump
+# these deliberately and re-run the test suite.
+
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+pydantic-settings==2.15.0
+httpx==0.28.1
+python-multipart==0.0.32
+
+langchain-core==1.6.0
+langchain-openai==1.6.0
+langgraph==1.2.11
+langgraph-checkpoint-sqlite==3.1.1
+
+faster-whisper==1.2.1
+python-can==4.6.1
+msal==1.38.0
+
+pytest==9.1.1

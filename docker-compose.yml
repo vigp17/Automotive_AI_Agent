@@ -20,6 +20,10 @@ services:
       - AZURE_AD_TENANT_ID=${AZURE_AD_TENANT_ID:-common}
       - AZURE_AD_CLIENT_ID=${AZURE_AD_CLIENT_ID:-}
       - VEHICLE_BUS=${VEHICLE_BUS:-sim}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
+    volumes:
+      # Keep preferences, conversation memory, and the Outlook token across rebuilds.
+      - backend-data:/app/data
 
   frontend:
     build: ./frontend
@@ -27,3 +31,6 @@ services:
       - "3000:80"
     depends_on:
       - backend
+
+volumes:
+  backend-data:

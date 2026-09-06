@@ -10,8 +10,12 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
 
 from app.config import DATA_DIR
+
+if TYPE_CHECKING:
+    from services.graph_calendar import GraphCalendarStore
 
 CALENDAR_FILE = DATA_DIR / "calendar.json"
 

@@ -30,7 +30,11 @@ def meeting_from_graph(event: dict) -> Meeting | None:
     end_block = event.get("end") or {}
     try:
         start = parse_graph_datetime(start_block)
-        end = parse_graph_datetime(end_block) if end_block.get("dateTime") else start + timedelta(minutes=30)
+        end = (
+            parse_graph_datetime(end_block)
+            if end_block.get("dateTime")
+            else start + timedelta(minutes=30)
+        )
     except ValueError:
         return None
     loc = event.get("location") or {}
@@ -64,7 +68,10 @@ class GraphCalendarStore:
             with httpx.Client(timeout=15) as client:
                 resp = client.get(
                     f"{GRAPH}/me/calendarView",
-                    headers={"Authorization": f"Bearer {token}", "Prefer": 'outlook.timezone="UTC"'},
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "Prefer": 'outlook.timezone="UTC"',
+                    },
                     params={
                         "startDateTime": now.isoformat(),
                         "endDateTime": end.isoformat(),

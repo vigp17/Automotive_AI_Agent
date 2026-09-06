@@ -6,8 +6,8 @@ import json
 
 from langchain_core.tools import tool
 
-from simulator.bus import get_bus
 from services.preferences import get_preferences, update_preferences
+from simulator.bus import get_bus
 
 
 @tool

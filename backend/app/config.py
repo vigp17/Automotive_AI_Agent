@@ -49,6 +49,14 @@ class Settings(BaseSettings):
     # sim = in-process VehicleSimulator. can = python-can virtual bus (Phase 5).
     vehicle_bus: str = "sim"
 
+    # Browser origins allowed to call the API directly. Both supported run modes
+    # (Vite dev proxy, nginx in Docker) are same-origin and never hit CORS; this
+    # only matters when the API is called cross-origin. "*" allows any origin.
+    cors_origins: str = "http://localhost:5173,http://localhost:3000"
+
+    def cors_origin_list(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
 
 @lru_cache
 def get_settings() -> Settings:

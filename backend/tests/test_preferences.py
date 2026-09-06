@@ -11,7 +11,7 @@ def test_resolve_home_and_work():
 
 def test_update_home_changes_resolution():
     update_preferences(home_query="Ballard Seattle", home_label="Home")
-    query, label = resolve_place("take me home".split()[-1])
+    query, label = resolve_place("home")
     assert query == "Ballard Seattle"
     assert label == "Home"
 

@@ -72,7 +72,10 @@ def evaluate_alerts(
                 "id": "low_battery",
                 "severity": "danger",
                 "title": "Low battery",
-                "message": f"Battery is at {soc}% ({sim.range_km()} km range). Plan a charging stop.",
+                "message": (
+                    f"Battery is at {soc}% ({sim.range_km()} km range)."
+                    " Plan a charging stop."
+                ),
                 "action": "Do I have enough battery for the airport?",
             }
         )
